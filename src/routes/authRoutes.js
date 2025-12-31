@@ -5,6 +5,10 @@ import {
   login,
   getProfile,
   updateProfile,
+  changePassword,
+  deleteAccount,
+  forgotPassword,
+  resetPassword,
   googleCallback,
   googleFailure
 } from '../controllers/authController.js';
@@ -59,14 +63,45 @@ router.put(
   '/profile',
   authMiddleware,
   [
-    body('email').optional().isEmail().withMessage('Valid email is required'),
-    body('password')
-      .optional()
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters'),
-    body('name').optional().notEmpty().withMessage('Name cannot be empty')
+    body('name').optional().notEmpty().withMessage('Name cannot be empty'),
+    body('avatar').optional().isString().withMessage('Avatar must be a valid string')
   ],
   updateProfile
+);
+
+// Change password
+router.post(
+  '/change-password',
+  authMiddleware,
+  [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword')
+      .isLength({ min: 6 })
+      .withMessage('New password must be at least 6 characters')
+  ],
+  changePassword
+);
+
+// Delete account
+router.delete('/account', authMiddleware, deleteAccount);
+
+// Forgot password
+router.post(
+  '/forgot-password',
+  [body('email').isEmail().withMessage('Valid email is required')],
+  forgotPassword
+);
+
+// Reset password
+router.post(
+  '/reset-password',
+  [
+    body('token').notEmpty().withMessage('Reset token is required'),
+    body('newPassword')
+      .isLength({ min: 6 })
+      .withMessage('New password must be at least 6 characters')
+  ],
+  resetPassword
 );
 
 export default router;

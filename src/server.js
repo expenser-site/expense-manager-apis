@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import passport from './config/passport.js';
+import emailService from './services/email/index.js';
 import healthRoutes from './routes/healthRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
@@ -15,9 +16,35 @@ import logger from './config/logger.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Initialize email service
+(async () => {
+  try {
+    await emailService.initialize(process.env.EMAIL_PROVIDER);
+    logger.info(`Email service ready using ${emailService.getProviderName()} provider`);
+  } catch (error) {
+    logger.logError(error, null, { context: 'email-service-startup' });
+  }
+})();
+
+// CORS configuration for multiple origins
+const allowedOrigins = [
+  'http://localhost:5173',    // Web app (Vite)
+  'http://localhost:8081',    // Mobile app (Expo web)
+  'http://localhost:19006',   // Mobile app (Expo alternative port)
+  'http://localhost:19000',   // Mobile app (Expo Metro bundler)
+  'exp://localhost:8081'     // Expo development
+];
+
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());

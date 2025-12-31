@@ -16,7 +16,12 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "migrate:categories": "node scripts/migrate-default-categories.js",
-    "validate": "npm run lint && npm run format:check && npx prisma validate"
+    "validate": "npm run lint && npm run format:check && npx prisma validate",
+    "test": "node tests/run-all-tests.js",
+    "test:auth": "node tests/test-auth-flow.js",
+    "test:categories": "node tests/test-category-flow.js",
+    "test:expenses": "node tests/test-expense-flow.js",
+    "test:email": "node tests/test-email-service.js"
   },
   "keywords": [
     "expense-tracker",
@@ -53,6 +58,7 @@
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "nodemailer": "^7.0.12",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "winston": "^3.19.0"

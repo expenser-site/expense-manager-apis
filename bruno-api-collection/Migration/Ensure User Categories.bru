@@ -1,0 +1,38 @@
+meta {
+  name: Ensure User Categories
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/migration/ensure-categories
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  # Ensure User Has Default Categories
+  
+  Ensures the currently logged-in user has default categories.
+  This endpoint should be called after login to handle old users who registered before default categories were implemented.
+  
+  **Safe to call multiple times** - Will only create categories if user doesn't have any.
+  
+  Behavior:
+  - If user has no categories: Creates all default categories
+  - If user has categories but missing "No Category": Creates only "No Category"
+  - If user already has all categories: Returns success without changes
+  - Always fixes any orphan expenses (expenses without a valid category)
+  
+  Returns:
+  - success: true/false
+  - message: Description of action taken
+  - alreadyMigrated: true if user already had categories
+  - categoriesCreated: Number of categories created (if any)
+  - noCategoryCreated: true if "No Category" was created
+  - orphanExpensesFixed: Number of expenses reassigned to "No Category"
+}

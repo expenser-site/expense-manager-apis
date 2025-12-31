@@ -1,0 +1,52 @@
+meta {
+  name: Delete Account
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/auth/account
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "password": "password123"
+  }
+}
+
+docs {
+  # Delete Account
+  
+  Permanently delete user account and all associated data.
+  This action cannot be undone!
+  
+  ## Request Body
+  - `password` (required for local accounts): User's password for verification
+  
+  ## What Gets Deleted
+  - User account
+  - All expenses (cascade)
+  - All categories (cascade)
+  
+  ## Notes
+  - Requires authentication
+  - Password required for local accounts
+  - OAuth accounts don't need password
+  - Cannot be undone
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.equal('Account deleted successfully');
+  });
+}

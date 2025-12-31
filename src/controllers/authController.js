@@ -1,8 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { validationResult } from 'express-validator';
 import prisma from '../config/database.js';
 import logger from '../config/logger.js';
+import emailService from '../services/email/index.js';
 import { createDefaultCategories } from '../utils/defaultCategories.js';
 
 const register = async (req, res) => {
@@ -41,6 +43,34 @@ const register = async (req, res) => {
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
       expiresIn: '7d'
     });
+
+    // Send welcome email (don't wait for it)
+    emailService
+      .sendWelcomeEmail(user.email, {
+        name: user.name,
+        email: user.email,
+        loginUrl: process.env.FRONTEND_URL || 'https://expenser.site'
+      })
+      .catch((error) => {
+        logger.logError(error, null, {
+          context: 'send-welcome-email',
+          userId: user.id
+        });
+      });
+
+    // Send getting started email after a delay (don't wait for it)
+    setTimeout(() => {
+      emailService
+        .sendGettingStartedEmail(user.email, {
+          name: user.name
+        })
+        .catch((error) => {
+          logger.logError(error, null, {
+            context: 'send-getting-started-email',
+            userId: user.id
+          });
+        });
+    }, 5000); // 5 seconds delay
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -131,24 +161,30 @@ const updateProfile = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password } = req.body;
-    const updateData = {};
+    const { name, email, avatar } = req.body;
 
-    // Check if email is being changed and if it's already taken
+    // Prevent email changes
     if (email) {
-      const existingUser = await prisma.user.findUnique({ where: { email } });
-      if (existingUser && existingUser.id !== req.userId) {
-        return res.status(400).json({ error: 'Email already in use' });
-      }
-      updateData.email = email;
+      return res.status(400).json({
+        error: 'Email cannot be changed. Please contact support if you need to update your email.'
+      });
     }
 
-    if (name) {
+    const updateData = {};
+
+    // Allow name updates
+    if (name !== undefined) {
       updateData.name = name;
     }
 
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
+    // Allow avatar updates
+    if (avatar !== undefined) {
+      updateData.avatar = avatar;
+    }
+
+    // Check if there's anything to update
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
     }
 
     const user = await prisma.user.update({
@@ -158,6 +194,8 @@ const updateProfile = async (req, res) => {
         id: true,
         email: true,
         name: true,
+        avatar: true,
+        authProvider: true,
         createdAt: true
       }
     });
@@ -168,6 +206,257 @@ const updateProfile = async (req, res) => {
     });
   } catch (error) {
     logger.logError(error, null, { context: 'update-user-profile' });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Change password (requires current password)
+const changePassword = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    // Get user with password
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user registered with OAuth
+    if (user.authProvider !== 'local' || !user.password) {
+      return res.status(400).json({
+        error: 'Cannot change password for OAuth accounts'
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { password: hashedPassword }
+    });
+
+    // Send password changed notification email (don't wait for it)
+    emailService
+      .sendPasswordChangedEmail(user.email, {
+        name: user.name,
+        changeTime: new Date().toLocaleString('en-US', {
+          dateStyle: 'full',
+          timeStyle: 'short'
+        }),
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        device: req.get('user-agent')
+      })
+      .catch((error) => {
+        logger.logError(error, null, {
+          context: 'send-password-changed-email',
+          userId: user.id
+        });
+      });
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    logger.logError(error, null, { context: 'change-password' });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Delete account
+const deleteAccount = async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    // Get user with password
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify password for local accounts
+    if (user.authProvider === 'local' && user.password) {
+      if (!password) {
+        return res.status(400).json({ error: 'Password is required to delete account' });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+    }
+
+    // Send account deletion email before deleting (don't wait for it)
+    emailService
+      .sendAccountDeletionEmail(user.email, {
+        name: user.name,
+        email: user.email,
+        isImmediate: true
+      })
+      .catch((error) => {
+        logger.logError(error, null, {
+          context: 'send-account-deletion-email',
+          userId: user.id
+        });
+      });
+
+    // Delete user (cascades to expenses and categories)
+    await prisma.user.delete({
+      where: { id: req.userId }
+    });
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    logger.logError(error, null, { context: 'delete-account' });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Forgot password - Send reset token
+const forgotPassword = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email } = req.body;
+
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    // Always return success message (don't reveal if user exists)
+    if (!user) {
+      return res.json({
+        message: 'If an account exists with this email, a password reset link has been sent.'
+      });
+    }
+
+    // Only allow password reset for local accounts
+    if (user.authProvider !== 'local' || !user.password) {
+      return res.json({
+        message: 'If an account exists with this email, a password reset link has been sent.'
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Save reset token to database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: resetExpires
+      }
+    });
+
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/reset-password?token=${resetToken}`;
+
+    // Send password reset email (don't wait for it)
+    emailService
+      .sendForgotPasswordEmail(user.email, {
+        name: user.name,
+        resetUrl,
+        expiresIn: '1 hour'
+      })
+      .catch((error) => {
+        logger.logError(error, null, {
+          context: 'send-forgot-password-email',
+          userId: user.id
+        });
+      });
+
+    res.json({
+      message: 'If an account exists with this email, a password reset link has been sent.',
+      // Remove this in production (only for testing)
+      resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+    });
+  } catch (error) {
+    logger.logError(error, null, { context: 'forgot-password' });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Reset password with token
+const resetPassword = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { token, newPassword } = req.body;
+
+    // Hash the token to compare with stored hash
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with valid reset token
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: {
+          gt: new Date() // Token not expired
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'Invalid or expired reset token'
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear reset token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null
+      }
+    });
+
+    // Send password reset confirmation email (don't wait for it)
+    emailService
+      .sendResetPasswordEmail(user.email, {
+        name: user.name,
+        loginUrl: process.env.FRONTEND_URL || 'https://expenser.site',
+        resetTime: new Date().toLocaleString('en-US', {
+          dateStyle: 'full',
+          timeStyle: 'short'
+        })
+      })
+      .catch((error) => {
+        logger.logError(error, null, {
+          context: 'send-reset-password-email',
+          userId: user.id
+        });
+      });
+
+    res.json({ message: 'Password reset successful' });
+  } catch (error) {
+    logger.logError(error, null, { context: 'reset-password' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -201,4 +490,15 @@ const googleFailure = (req, res) => {
   res.redirect(`${frontendUrl}/auth/error?message=Google authentication failed`);
 };
 
-export { register, login, getProfile, updateProfile, googleCallback, googleFailure };
+export {
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  changePassword,
+  deleteAccount,
+  forgotPassword,
+  resetPassword,
+  googleCallback,
+  googleFailure
+};
