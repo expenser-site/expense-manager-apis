@@ -1,64 +1,49 @@
 /**
- * OTP Verification Email Template
- * Sent when user requests an OTP for sensitive operations
+ * OTP Verification Email Template (HTML Version)
+ * Sent when user needs to verify with OTP code
  */
 import {
+  createEmailWrapper,
   createHeader,
   createFooter,
-  createCodeBlock,
   createWarningBox,
-  createInfoBox,
-  createList,
-  createDivider
+  createCodeBlock,
+  createDivider,
+  createContent,
+  createParagraph
 } from './emailTemplateUtils.js';
 
 const otpVerificationTemplate = (data) => {
-  const { name, otp, expiresIn = '10 minutes', purpose = 'verification' } = data;
+  const { name, otp, expiryMinutes = 10 } = data;
 
-  const purposeMessages = {
-    verification: 'verify your identity',
-    login: 'complete your login',
-    'password-reset': 'reset your password',
-    'account-deletion': 'delete your account',
-    'sensitive-operation': 'complete this sensitive operation'
-  };
+  const content = createContent(`
+    ${createParagraph(`Hello <strong>${name}</strong>,`)}
+    
+    ${createParagraph('Your verification code:')}
+    
+    ${createDivider()}
+    
+    ${createCodeBlock(otp, 'Your OTP Code')}
+    
+    ${createDivider()}
+    
+    ${createWarningBox(`This code expires in <strong>${expiryMinutes} minutes</strong>.`)}
+    
+    ${createParagraph('Never share this code with anyone.')}
+    
+    ${createParagraph('Best regards,<br>The Expenser Team')}
+  `);
 
-  const purposeMessage = purposeMessages[purpose] || purposeMessages['verification'];
+  const html = createEmailWrapper(`
+    ${createHeader('Your Verification Code')}
+    ${content}
+    ${createFooter()}
+  `);
 
   return {
-    subject: `🔐 Your Expenser Verification Code: ${otp}`,
-    text: `${createHeader('One-Time Password (OTP)')}
-
-Hello ${name},
-
-You requested a verification code to ${purposeMessage}.
-
-${createCodeBlock(otp, 'Your OTP')}
-
-${createInfoBox(`This code will expire in ${expiresIn}`)}
-
-${createDivider()}
-
-Security Information:
-
-${createList([
-      'Never share this code with anyone',
-      'Expenser staff will never ask for your OTP',
-      'This code is only valid for one use',
-      `It will expire automatically after ${expiresIn}`,
-      'If you didn\'t request this code, ignore this email'
-    ])}
-
-${createWarningBox('If you didn\'t request this code, please secure your account immediately by changing your password.')}
-
-${createDivider()}
-
-If you're having trouble or didn't request this code, please contact our support team immediately.
-
-Best regards,
-The Expenser Team
-
-${createFooter()}`
+    subject: `🔐 Your Expenser OTP Code: ${otp}`,
+    html,
+    text: `Hello ${name},\n\nYour OTP code is: ${otp}\n\nThis code expires in ${expiryMinutes} minutes.`
   };
 };
 

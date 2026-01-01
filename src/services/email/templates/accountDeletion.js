@@ -1,141 +1,62 @@
 /**
- * Account Deletion Email Template
- * Sent when user account is scheduled for deletion or deleted
+ * Account Deletion Email Template (HTML Version)
+ * Sent when user's account is scheduled for deletion
  */
 import {
+  createEmailWrapper,
   createHeader,
   createFooter,
   createButton,
+  createErrorBox,
   createWarningBox,
-  createInfoBox,
-  createList,
-  createDivider
+  createDivider,
+  createContent,
+  createParagraph
 } from './emailTemplateUtils.js';
 
 const accountDeletionTemplate = (data) => {
-  const { name, email, deletionDate, cancelUrl, isImmediate = false } = data;
-  const appUrl = cancelUrl || process.env.FRONTEND_URL || 'https://expenser.site';
+  const { name, deletionDate, cancelUrl, daysUntilDeletion = 30 } = data;
+  const appUrl = cancelUrl || process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard';
 
-  if (isImmediate) {
-    return {
-      subject: '👋 Your Expenser Account Has Been Deleted',
-      text: `${createHeader('Account Deleted')}
-
-Hello ${name},
-
-Your Expenser account (${email}) has been permanently deleted as requested.
-
-${createDivider()}
-
-What's been deleted:
-
-${createList([
-        'All your expenses and transactions',
-        'Your categories and customizations',
-        'Your profile and settings',
-        'All associated data and analytics'
-      ])}
-
-${createWarningBox('This action cannot be undone. All your data has been permanently removed from our systems.')}
-
-${createDivider()}
-
-We're sorry to see you go! 😢
-
-If you have a moment, we'd love to hear why you decided to leave. Your feedback helps us improve Expenser for everyone.
-
-${createList([
-        'Send feedback: contact@expenser.site',
-        'Rate your experience: feedback.expenser.site'
-      ])}
-
-${createDivider()}
-
-Want to come back?
-
-If you change your mind, you can always create a new account:
-
-${createButton('Create New Account', `${appUrl}/register`)}
-
-Note: You'll need to start fresh as all previous data has been deleted.
-
-${createDivider()}
-
-Thank you for using Expenser. We hope our paths cross again in the future!
-
-Best wishes,
-The Expenser Team
-
-${createFooter()}`
-    };
-  }
-
-  // Scheduled deletion
-  const deletionDateFormatted = new Date(deletionDate).toLocaleDateString('en-US', {
-    dateStyle: 'full'
+  const formattedDate = new Date(deletionDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
+
+  const content = createContent(`
+    ${createParagraph(`Hello <strong>${name}</strong>,`)}
+    
+    ${createErrorBox('Your account is scheduled for deletion.')}
+    
+    ${createParagraph(`<strong>Deletion Date:</strong> ${formattedDate}`)}
+    
+    ${createWarningBox('All your data will be permanently deleted. This cannot be undone.')}
+    
+    ${createParagraph(`Changed your mind? You have <strong>${daysUntilDeletion} days</strong> to cancel:`)}
+    
+    ${createDivider()}
+    
+    ${createButton('Cancel Deletion', appUrl, 'success')}
+    
+    ${createDivider()}
+    
+    ${createParagraph('Thank you for using Expenser.')}
+    
+    ${createParagraph('Best regards,<br>The Expenser Team')}
+  `);
+
+  const html = createEmailWrapper(`
+    ${createHeader('Account Deletion Scheduled')}
+    ${content}
+    ${createFooter()}
+  `);
 
   return {
     subject: '⚠️ Your Expenser Account Will Be Deleted',
-    text: `${createHeader('Account Deletion Scheduled')}
-
-Hello ${name},
-
-We received a request to delete your Expenser account (${email}).
-
-${createWarningBox(`Your account is scheduled for deletion on ${deletionDateFormatted}`)}
-
-${createDivider()}
-
-What will be deleted:
-
-${createList([
-      'All your expenses and transactions',
-      'Your categories and customizations',
-      'Your profile and settings',
-      'All associated data and analytics',
-      'Your account login credentials'
-    ])}
-
-${createInfoBox(`You have until ${deletionDateFormatted} to cancel this deletion.`)}
-
-${createDivider()}
-
-Changed your mind?
-
-If you want to keep your account, you can cancel the deletion:
-
-${createButton('Cancel Account Deletion', cancelUrl)}
-
-${createDivider()}
-
-If you didn't request this deletion:
-
-${createList([
-      'Cancel the deletion immediately using the link above',
-      'Change your password to secure your account',
-      'Contact our support team: contact@expenser.site'
-    ])}
-
-${createDivider()}
-
-Why are you leaving?
-
-We'd love to know how we can improve. If you have a moment, please share your feedback:
-
-${createList([
-      'Email us: contact@expenser.site',
-      'Quick survey: feedback.expenser.site'
-    ])}
-
-${createDivider()}
-
-Thank you for using Expenser. We're sorry to see you go!
-
-Best regards,
-The Expenser Team
-
-${createFooter()}`
+    html,
+    text: `Hello ${name},\n\nYour account will be deleted on ${formattedDate}. To cancel, visit ${appUrl}`
   };
 };
 

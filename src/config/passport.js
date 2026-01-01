@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import prisma from './database.js';
 import logger from './logger.js';
+import emailService from '../services/email/index.js';
 import { createDefaultCategories } from '../utils/defaultCategories.js';
 
 // Configure Google OAuth Strategy
@@ -99,6 +100,34 @@ passport.use(
 
         // Create default categories for new user
         await createDefaultCategories(user.id);
+
+        // Send welcome email to new Google OAuth user (don't wait for it)
+        emailService
+          .sendWelcomeEmail(user.email, {
+            name: user.name,
+            email: user.email,
+            loginUrl: process.env.FRONTEND_URL || 'https://expenser.site'
+          })
+          .catch((error) => {
+            logger.logError(error, null, {
+              context: 'send-welcome-email-oauth',
+              userId: user.id
+            });
+          });
+
+        // Send getting started email after a delay (don't wait for it)
+        setTimeout(() => {
+          emailService
+            .sendGettingStartedEmail(user.email, {
+              name: user.name
+            })
+            .catch((error) => {
+              logger.logError(error, null, {
+                context: 'send-getting-started-email-oauth',
+                userId: user.id
+              });
+            });
+        }, 5000); // 5 seconds delay
 
         logger.info('New user created with Google', { userId: user.id, email });
         return done(null, user);

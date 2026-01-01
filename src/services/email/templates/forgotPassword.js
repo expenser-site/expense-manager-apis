@@ -1,62 +1,50 @@
 /**
- * Forgot Password Email Template
+ * Forgot Password Email Template (HTML Version)
  * Sent when user requests password reset
  */
 import {
+  createEmailWrapper,
   createHeader,
   createFooter,
   createButton,
   createWarningBox,
-  createInfoBox,
-  createList,
-  createDivider
+  createDivider,
+  createContent,
+  createParagraph
 } from './emailTemplateUtils.js';
 
 const forgotPasswordTemplate = (data) => {
-  const { name, resetUrl, expiresIn = '1 hour' } = data;
+  // eslint-disable-next-line no-unused-vars
+  const { name, resetUrl, resetToken, expiryMinutes = 15 } = data;
+
+  const content = createContent(`
+    ${createParagraph(`Hello <strong>${name}</strong>,`)}
+    
+    ${createParagraph('We received a request to reset your password. Click the button below to create a new password:')}
+    
+    ${createDivider()}
+    
+    ${createButton('Reset Password', resetUrl)}
+    
+    ${createDivider()}
+    
+    ${createWarningBox(`This link expires in <strong>${expiryMinutes} minutes</strong>.`)}
+    
+    ${createParagraph('If you didn\'t request this, please ignore this email.')}
+    
+    ${createParagraph('Best regards,<br>The Expenser Team')}
+  `);
+
+  const html = createEmailWrapper(`
+    ${createHeader('Password Reset Request')}
+    ${content}
+    ${createFooter()}
+  `);
 
   return {
-    subject: '🔑 Password Reset Request - Expenser',
-    text: `${createHeader('Password Reset Request')}
-
-Hello ${name},
-
-We received a request to reset your password for your Expenser account.
-
-${createInfoBox(`This password reset link is valid for ${expiresIn}`)}
-
-${createButton('Reset Your Password', resetUrl)}
-
-${createDivider()}
-
-If the button doesn't work, copy and paste this link into your browser:
-
-${resetUrl}
-
-${createDivider()}
-
-${createWarningBox('If you didn\'t request a password reset, please ignore this email. Your password will remain unchanged.')}
-
-${createDivider()}
-
-Security Tips:
-
-${createList([
-      'Never share your password reset link with anyone',
-      'This link can only be used once',
-      `It will expire automatically after ${expiresIn}`,
-      'If you suspect unauthorized access, contact support immediately',
-      'Choose a strong, unique password for your account'
-    ])}
-
-${createDivider()}
-
-If you're having trouble or have security concerns, please contact our support team.
-
-Best regards,
-The Expenser Team
-
-${createFooter()}`
+    subject: '🔐 Reset Your Expenser Password',
+    html,
+    text: `Hello ${name},\n\nYou requested to reset your password. Click this link: ${resetUrl}\n\nThis link expires in ${expiryMinutes} minutes.`
   };
 };
 

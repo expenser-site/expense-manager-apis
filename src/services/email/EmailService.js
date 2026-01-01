@@ -59,7 +59,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -72,7 +73,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -85,7 +87,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -98,7 +101,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -111,7 +115,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -124,7 +129,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -137,7 +143,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -150,7 +157,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -163,7 +171,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 
@@ -176,7 +185,8 @@ class EmailService {
     return this.provider.sendEmail({
       to,
       subject: template.subject,
-      text: template.text
+      text: template.text,
+      html: template.html
     });
   }
 

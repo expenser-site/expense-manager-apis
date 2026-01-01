@@ -37,7 +37,8 @@ class ZeptoMailProvider extends BaseEmailProvider {
         subject: options.subject,
         text: options.text,
         html: options.html,
-        replyTo: options.replyTo || this.defaultReplyTo
+        replyTo: options.replyTo || this.defaultReplyTo,
+        attachments: options.attachments || []
       };
 
       const info = await this.transporter.sendMail(mailOptions);

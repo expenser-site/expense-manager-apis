@@ -48,8 +48,7 @@ const register = async (req, res) => {
     emailService
       .sendWelcomeEmail(user.email, {
         name: user.name,
-        email: user.email,
-        loginUrl: process.env.FRONTEND_URL || 'https://expenser.site'
+        loginUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard'
       })
       .catch((error) => {
         logger.logError(error, null, {
@@ -62,7 +61,8 @@ const register = async (req, res) => {
     setTimeout(() => {
       emailService
         .sendGettingStartedEmail(user.email, {
-          name: user.name
+          name: user.name,
+          dashboardUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard'
         })
         .catch((error) => {
           logger.logError(error, null, {
@@ -253,12 +253,8 @@ const changePassword = async (req, res) => {
     emailService
       .sendPasswordChangedEmail(user.email, {
         name: user.name,
-        changeTime: new Date().toLocaleString('en-US', {
-          dateStyle: 'full',
-          timeStyle: 'short'
-        }),
-        ipAddress: req.ip || req.connection?.remoteAddress,
-        device: req.get('user-agent')
+        changedAt: new Date(),
+        loginUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/login'
       })
       .catch((error) => {
         logger.logError(error, null, {
@@ -301,11 +297,15 @@ const deleteAccount = async (req, res) => {
     }
 
     // Send account deletion email before deleting (don't wait for it)
+    const deletionDate = new Date();
+    deletionDate.setDate(deletionDate.getDate() + 1); // 1 day notice
+
     emailService
       .sendAccountDeletionEmail(user.email, {
         name: user.name,
-        email: user.email,
-        isImmediate: true
+        deletionDate,
+        cancelUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard',
+        daysUntilDeletion: 1
       })
       .catch((error) => {
         logger.logError(error, null, {
@@ -375,7 +375,8 @@ const forgotPassword = async (req, res) => {
       .sendForgotPasswordEmail(user.email, {
         name: user.name,
         resetUrl,
-        expiresIn: '1 hour'
+        resetToken,
+        expiryMinutes: 60
       })
       .catch((error) => {
         logger.logError(error, null, {
@@ -441,11 +442,7 @@ const resetPassword = async (req, res) => {
     emailService
       .sendResetPasswordEmail(user.email, {
         name: user.name,
-        loginUrl: process.env.FRONTEND_URL || 'https://expenser.site',
-        resetTime: new Date().toLocaleString('en-US', {
-          dateStyle: 'full',
-          timeStyle: 'short'
-        })
+        loginUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/login'
       })
       .catch((error) => {
         logger.logError(error, null, {

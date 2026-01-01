@@ -1,78 +1,62 @@
 /**
- * Password Changed Email Template
- * Sent when password is changed from account settings
+ * Password Changed Confirmation Email Template (HTML Version)
+ * Sent after successful password change
  */
 import {
+  createEmailWrapper,
   createHeader,
   createFooter,
+  createButton,
   createSuccessBox,
   createWarningBox,
-  createList,
-  createDivider
+  createDivider,
+  createContent,
+  createParagraph
 } from './emailTemplateUtils.js';
 
 const passwordChangedTemplate = (data) => {
-  const { name, changeTime, ipAddress, device } = data;
-  const timestamp = changeTime || new Date().toLocaleString('en-US', {
-    dateStyle: 'full',
-    timeStyle: 'short'
+  const { name, changedAt, loginUrl } = data;
+  const appUrl = loginUrl || process.env.FRONTEND_URL || 'https://app.expenser.site/login';
+  const supportEmail = 'support@expenser.site';
+
+  const changeTime = new Date(changedAt).toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short'
   });
 
+  const content = createContent(`
+    ${createParagraph(`Hello <strong>${name}</strong>,`)}
+    
+    ${createSuccessBox('Your password has been changed successfully!')}
+    
+    ${createParagraph(`Changed at: <strong>${changeTime}</strong>`)}
+    
+    ${createWarningBox(`If you didn't make this change, please contact support immediately at <a href="mailto:${supportEmail}" style="color: #ef4444; text-decoration: none;">${supportEmail}</a>`)}
+    
+    ${createDivider()}
+    
+    ${createButton('Log In to Expenser', appUrl)}
+    
+    ${createDivider()}
+    
+    ${createParagraph('Best regards,<br>The Expenser Team')}
+  `);
+
+  const html = createEmailWrapper(`
+    ${createHeader('Password Changed Successfully')}
+    ${content}
+    ${createFooter()}
+  `);
+
   return {
-    subject: '🔐 Password Changed Successfully - Expenser',
-    text: `${createHeader('Password Changed')}
-
-Hello ${name},
-
-${createSuccessBox('Your account password has been changed successfully!')}
-
-This is a confirmation that your Expenser account password was changed on ${timestamp}.
-
-${createDivider()}
-
-Change Details:
-
-${createList([
-      `Time: ${timestamp}`,
-      ipAddress ? `IP Address: ${ipAddress}` : null,
-      device ? `Device: ${device}` : null
-    ].filter(Boolean))}
-
-${createDivider()}
-
-${createWarningBox('If you didn\'t make this change, your account may have been compromised!')}
-
-If you did NOT change your password:
-
-${createList([
-      '1. Contact our support team immediately: contact@expenser.site',
-      '2. Try to log in and change your password',
-      '3. Check your email account for unauthorized access',
-      '4. Review your recent account activity'
-    ])}
-
-${createDivider()}
-
-Account Security Best Practices:
-
-${createList([
-      'Use a strong, unique password for each account',
-      'Enable two-factor authentication when available',
-      'Never share your password with anyone',
-      'Be cautious of phishing emails and suspicious links',
-      'Regularly review your account activity',
-      'Keep your email account secure',
-      'Use a password manager to track your passwords'
-    ])}
-
-${createDivider()}
-
-Your security is important to us. If you have any concerns about your account, please don't hesitate to contact our support team.
-
-Best regards,
-The Expenser Team
-
-${createFooter()}`
+    subject: '🔐 Your Expenser Password Has Been Changed',
+    html,
+    text: `Hello ${name},\n\nYour password was changed at ${changeTime}. If you didn't make this change, contact support immediately.`
   };
 };
 
