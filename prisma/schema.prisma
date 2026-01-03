@@ -58,5 +58,8 @@ model Expense {
   @@index([userId])
   @@index([date])
   @@index([categoryId])
+  @@index([userId, date(sort: Desc)]) // Critical for date range queries
+  @@index([userId, categoryId]) // Critical for category filtering
+  @@index([userId, categoryId, date(sort: Desc)]) // Critical for combined filters
   @@map("expenses")
 }

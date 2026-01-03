@@ -33,6 +33,7 @@ const register = async (req, res) => {
         id: true,
         email: true,
         name: true,
+        authProvider: true,
         createdAt: true
       }
     });
@@ -119,7 +120,8 @@ const login = async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        avatar: user.avatar
+        avatar: user.avatar,
+        authProvider: user.authProvider
       },
       token
     });
@@ -341,8 +343,15 @@ const forgotPassword = async (req, res) => {
       where: { email }
     });
 
+    logger.info('Forgot password request', {
+      email,
+      userFound: !!user,
+      authProvider: user?.authProvider
+    });
+
     // Always return success message (don't reveal if user exists)
     if (!user) {
+      logger.info('User not found for forgot password', { email });
       return res.json({
         message: 'If an account exists with this email, a password reset link has been sent.'
       });
@@ -350,6 +359,11 @@ const forgotPassword = async (req, res) => {
 
     // Only allow password reset for local accounts
     if (user.authProvider !== 'local' || !user.password) {
+      logger.info('User not eligible for password reset', {
+        email,
+        authProvider: user.authProvider,
+        hasPassword: !!user.password
+      });
       return res.json({
         message: 'If an account exists with this email, a password reset link has been sent.'
       });
@@ -368,7 +382,7 @@ const forgotPassword = async (req, res) => {
       }
     });
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
 
     // Send password reset email (don't wait for it)
     emailService
@@ -378,10 +392,19 @@ const forgotPassword = async (req, res) => {
         resetToken,
         expiryMinutes: 60
       })
+      .then(() => {
+        logger.info('Forgot password email sent successfully', {
+          userId: user.id,
+          email: user.email
+        });
+      })
       .catch((error) => {
         logger.logError(error, null, {
           context: 'send-forgot-password-email',
-          userId: user.id
+          userId: user.id,
+          email: user.email,
+          errorMessage: error.message,
+          errorStack: error.stack
         });
       });
 

@@ -59,7 +59,11 @@ const createExpense = async (req, res) => {
 const getExpenses = async (req, res) => {
   try {
     const { page = 1, limit = 10, categoryId, startDate, endDate, search } = req.query;
-    const skip = (page - 1) * limit;
+
+    // Limit maximum page size to prevent memory issues
+    const maxLimit = 100;
+    const safeLimit = Math.min(parseInt(limit), maxLimit);
+    const skip = (page - 1) * safeLimit;
 
     const where = {
       userId: req.userId,
@@ -84,9 +88,16 @@ const getExpenses = async (req, res) => {
         where,
         orderBy: { date: 'desc' },
         skip: parseInt(skip),
-        take: parseInt(limit),
+        take: safeLimit,
         include: {
-          category: true
+          category: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+              icon: true
+            }
+          }
         }
       }),
       prisma.expense.count({ where })
@@ -96,9 +107,9 @@ const getExpenses = async (req, res) => {
       expenses,
       pagination: {
         page: parseInt(page),
-        limit: parseInt(limit),
+        limit: safeLimit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / safeLimit)
       }
     });
   } catch (error) {
