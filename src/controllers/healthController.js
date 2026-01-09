@@ -1,4 +1,5 @@
 import prisma from '../config/database.js';
+import { STATIC_LINK_CACHE, createLink } from '../utils/hateoas.js';
 
 export const getHealth = async (req, res) => {
   try {
@@ -27,14 +28,57 @@ export const getHealthDetailed = async (req, res) => {
     let databaseMessage = 'Database is operational';
 
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      // Add 5 second timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database check timeout')), 5000)
+      );
+      const dbCheckPromise = prisma.$queryRaw`SELECT 1`;
+      await Promise.race([dbCheckPromise, timeoutPromise]);
     } catch (error) {
       databaseStatus = 'disconnected';
-      databaseMessage = 'Database connection failed';
+      databaseMessage = error.message === 'Database check timeout'
+        ? 'Database connection timeout'
+        : 'Database connection failed';
+    }
+
+    // Check HATEOAS health
+    let hateoasStatus = 'ok';
+    let hateoasMessage = 'HATEOAS links are operational';
+    let hateoasDetails = {};
+
+    try {
+      const baseUrl = process.env.API_BASE_URL;
+      if (!baseUrl) {
+        hateoasStatus = 'warning';
+        hateoasMessage = 'API_BASE_URL not configured, using default';
+      }
+
+      // Verify link generation works
+      const testLink = createLink('test', '/test', 'GET', 'Test link');
+      if (!testLink.href || !testLink.href.includes('api')) {
+        hateoasStatus = 'degraded';
+        hateoasMessage = 'Link generation producing invalid URLs';
+      }
+
+      // Check static link cache
+      const cacheSize = STATIC_LINK_CACHE.size;
+      if (cacheSize > 100) {
+        hateoasStatus = 'warning';
+        hateoasMessage = `Static link cache unusually large: ${cacheSize} entries`;
+      }
+
+      hateoasDetails = {
+        baseUrl: baseUrl || 'https://api.expenser.site/api',
+        cacheSize,
+        cacheEnabled: true
+      };
+    } catch (error) {
+      hateoasStatus = 'error';
+      hateoasMessage = `HATEOAS error: ${error.message}`;
     }
 
     const healthCheck = {
-      status: databaseStatus === 'connected' ? 'ok' : 'degraded',
+      status: databaseStatus === 'connected' && hateoasStatus === 'ok' ? 'ok' : 'degraded',
       message: 'Expenser API Health Check',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
@@ -47,6 +91,11 @@ export const getHealthDetailed = async (req, res) => {
         api: {
           status: 'ok',
           message: 'API is operational'
+        },
+        hateoas: {
+          status: hateoasStatus,
+          message: hateoasMessage,
+          ...hateoasDetails
         }
       },
       system: {
@@ -55,12 +104,15 @@ export const getHealthDetailed = async (req, res) => {
         memory: {
           used: Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100,
           total: Math.round((process.memoryUsage().heapTotal / 1024 / 1024) * 100) / 100,
-          unit: 'MB'
+          unit: 'MB',
+          warning: process.memoryUsage().heapUsed / process.memoryUsage().heapTotal > 0.9
+            ? 'Memory usage exceeds 90%'
+            : null
         }
       }
     };
 
-    const statusCode = databaseStatus === 'connected' ? 200 : 503;
+    const statusCode = databaseStatus === 'connected' && hateoasStatus !== 'error' ? 200 : 503;
     res.status(statusCode).json(healthCheck);
   } catch (error) {
     res.status(503).json({

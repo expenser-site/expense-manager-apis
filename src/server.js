@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import session from 'express-session';
 import passport from './config/passport.js';
 import emailService from './services/email/index.js';
@@ -11,6 +12,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import migrationRoutes from './routes/migrationRoutes.js';
 import { requestLogger, errorLogger } from './middleware/logging.js';
+import { conditionalCache } from './middleware/etag.js';
 import logger from './config/logger.js';
 
 const app = express();
@@ -47,6 +49,19 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Response compression (60-80% bandwidth reduction)
+app.use(compression({
+  level: 6, // Balanced compression (0-9, higher = more compression but slower)
+  threshold: 1024, // Only compress responses > 1KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
+
 app.use(express.json());
 
 // Session middleware (required for passport)
@@ -69,6 +84,32 @@ app.use(passport.session());
 
 // Request logging middleware
 app.use(requestLogger);
+
+// ETag caching for read-only routes (70-90% faster repeat requests)
+// Apply to GET endpoints that return relatively stable data
+app.use('/api/v1/expenses', (req, res, next) => {
+  if (req.method === 'GET') {
+    conditionalCache(req, res, next);
+  } else {
+    next();
+  }
+});
+
+app.use('/api/v1/categories', (req, res, next) => {
+  if (req.method === 'GET') {
+    conditionalCache(req, res, next);
+  } else {
+    next();
+  }
+});
+
+app.use('/api/v1/dashboard', (req, res, next) => {
+  if (req.method === 'GET') {
+    conditionalCache(req, res, next);
+  } else {
+    next();
+  }
+});
 
 // Routes
 app.use('/api/v1/health', healthRoutes);

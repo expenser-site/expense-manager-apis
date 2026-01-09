@@ -5,7 +5,13 @@ import { validationResult } from 'express-validator';
 import prisma from '../config/database.js';
 import logger from '../config/logger.js';
 import emailService from '../services/email/index.js';
-import { createDefaultCategories } from '../utils/defaultCategories.js';
+import { addUserLinks, userLinks } from '../utils/hateoas.js';
+
+// Validate JWT secret at module load
+if (!process.env.JWT_SECRET) {
+  logger.logError(new Error('JWT_SECRET is not defined'), null, { context: 'auth-controller-init' });
+  throw new Error('FATAL: JWT_SECRET environment variable is required');
+}
 
 const register = async (req, res) => {
   try {
@@ -16,6 +22,14 @@ const register = async (req, res) => {
 
     const { email, password, name } = req.body;
 
+    // Validate name
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ error: 'Name is required and cannot be empty' });
+    }
+    if (name.length > 100) {
+      return res.status(400).json({ error: 'Name cannot exceed 100 characters' });
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'Email already registered' });
@@ -23,23 +37,43 @@ const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        authProvider: true,
-        createdAt: true
-      }
-    });
+    // Use transaction to ensure atomic user creation with default categories
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          authProvider: true,
+          createdAt: true
+        }
+      });
 
-    // Create default categories for the new user
-    await createDefaultCategories(user.id);
+      // Create default categories for the new user within the same transaction
+      await tx.category.createMany({
+        data: [
+          { name: 'No Category', color: '#9CA3AF', icon: '📋', userId: newUser.id },
+          { name: 'Food & Dining', color: '#EF4444', icon: '🍔', userId: newUser.id },
+          { name: 'Transportation', color: '#3B82F6', icon: '🚗', userId: newUser.id },
+          { name: 'Shopping', color: '#8B5CF6', icon: '🛍️', userId: newUser.id },
+          { name: 'Entertainment', color: '#EC4899', icon: '🎬', userId: newUser.id },
+          { name: 'Bills & Utilities', color: '#F59E0B', icon: '💡', userId: newUser.id },
+          { name: 'Healthcare', color: '#10B981', icon: '⚕️', userId: newUser.id },
+          { name: 'Education', color: '#06B6D4', icon: '📚', userId: newUser.id },
+          { name: 'Travel', color: '#6366F1', icon: '✈️', userId: newUser.id },
+          { name: 'Personal Care', color: '#EC4899', icon: '💆', userId: newUser.id },
+          { name: 'Groceries', color: '#84CC16', icon: '🛒', userId: newUser.id },
+          { name: 'Other', color: '#64748B', icon: '📌', userId: newUser.id }
+        ]
+      });
+
+      return newUser;
+    });
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
       expiresIn: '7d'
@@ -75,8 +109,12 @@ const register = async (req, res) => {
 
     res.status(201).json({
       message: 'User registered successfully',
-      user,
-      token
+      user: addUserLinks(user),
+      token,
+      _links: [
+        userLinks.self(),
+        userLinks.dashboard()
+      ]
     });
   } catch (error) {
     logger.logError(error, null, { context: 'user-registration' });
@@ -116,14 +154,18 @@ const login = async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user: {
+      user: addUserLinks({
         id: user.id,
         email: user.email,
         name: user.name,
         avatar: user.avatar,
         authProvider: user.authProvider
-      },
-      token
+      }),
+      token,
+      _links: [
+        userLinks.self(),
+        userLinks.dashboard()
+      ]
     });
   } catch (error) {
     logger.logError(error, null, { context: 'user-login' });
@@ -149,7 +191,7 @@ const getProfile = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(user);
+    res.json(addUserLinks(user));
   } catch (error) {
     logger.logError(error, null, { context: 'get-user-profile' });
     res.status(500).json({ error: 'Internal server error' });
@@ -176,6 +218,12 @@ const updateProfile = async (req, res) => {
 
     // Allow name updates
     if (name !== undefined) {
+      if (name && name.trim().length === 0) {
+        return res.status(400).json({ error: 'Name cannot be empty' });
+      }
+      if (name && name.length > 100) {
+        return res.status(400).json({ error: 'Name cannot exceed 100 characters' });
+      }
       updateData.name = name;
     }
 
@@ -204,7 +252,7 @@ const updateProfile = async (req, res) => {
 
     res.json({
       message: 'Profile updated successfully',
-      user
+      user: addUserLinks(user)
     });
   } catch (error) {
     logger.logError(error, null, { context: 'update-user-profile' });
@@ -242,6 +290,12 @@ const changePassword = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Check if new password is same as current password
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return res.status(400).json({ error: 'New password must be different from current password' });
     }
 
     // Hash and update new password
@@ -298,16 +352,18 @@ const deleteAccount = async (req, res) => {
       }
     }
 
-    // Send account deletion email before deleting (don't wait for it)
-    const deletionDate = new Date();
-    deletionDate.setDate(deletionDate.getDate() + 1); // 1 day notice
+    // Delete user (cascades to expenses and categories)
+    await prisma.user.delete({
+      where: { id: req.userId }
+    });
 
+    // Send account deletion confirmation email after successful deletion (don't wait for it)
     emailService
       .sendAccountDeletionEmail(user.email, {
         name: user.name,
-        deletionDate,
-        cancelUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard',
-        daysUntilDeletion: 1
+        deletionDate: new Date(),
+        cancelUrl: null, // No cancel option since already deleted
+        daysUntilDeletion: 0
       })
       .catch((error) => {
         logger.logError(error, null, {
@@ -315,11 +371,6 @@ const deleteAccount = async (req, res) => {
           userId: user.id
         });
       });
-
-    // Delete user (cascades to expenses and categories)
-    await prisma.user.delete({
-      where: { id: req.userId }
-    });
 
     res.json({ message: 'Account deleted successfully' });
   } catch (error) {

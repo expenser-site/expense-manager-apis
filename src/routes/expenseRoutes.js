@@ -5,7 +5,8 @@ import {
   getExpenses,
   getExpenseById,
   updateExpense,
-  deleteExpense
+  deleteExpense,
+  bulkDeleteExpenses
 } from '../controllers/expenseController.js';
 import authMiddleware from '../middleware/auth.js';
 
@@ -37,5 +38,19 @@ router.put(
 );
 
 router.delete('/:id', deleteExpense);
+
+// Bulk delete expenses
+router.post(
+  '/bulk-delete',
+  [
+    body('expenseIds')
+      .isArray({ min: 1, max: 100 })
+      .withMessage('expenseIds must be an array with 1-100 items'),
+    body('expenseIds.*')
+      .isUUID()
+      .withMessage('Each expense ID must be a valid UUID')
+  ],
+  bulkDeleteExpenses
+);
 
 export default router;
