@@ -6,8 +6,85 @@ import {
 } from '../utils/defaultCategories.js';
 
 /**
+ * Ensure current logged-in user has default categories
+ * This endpoint is called after login to handle old users without default categories
+ */
+const ensureUserDefaultCategories = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    // Check if user has any categories
+    const categoriesCount = await prisma.category.count({
+      where: { userId }
+    });
+
+    // If user already has categories, return success
+    if (categoriesCount > 0) {
+      // Still check for "No Category" and orphan expenses
+      const hasNoCategory = await prisma.category.findFirst({
+        where: {
+          userId,
+          name: 'No Category'
+        }
+      });
+
+      let noCategoryCreated = false;
+      if (!hasNoCategory) {
+        await prisma.category.create({
+          data: {
+            name: 'No Category',
+            color: '#9CA3AF',
+            icon: '📋',
+            userId
+          }
+        });
+        noCategoryCreated = true;
+      }
+
+      // Fix any orphan expenses
+      const orphanExpensesFixed = await assignNoCategoryToOrphanExpenses(userId);
+
+      return res.json({
+        success: true,
+        message: 'User categories verified',
+        alreadyMigrated: true,
+        noCategoryCreated,
+        orphanExpensesFixed
+      });
+    }
+
+    // User has no categories - create default ones
+    const { categories } = await createDefaultCategories(userId);
+
+    // Fix any orphan expenses
+    const orphanExpensesFixed = await assignNoCategoryToOrphanExpenses(userId);
+
+    logger.info(`Created default categories for user ${userId}`, {
+      userId,
+      categoriesCount: categories.length,
+      orphanExpensesFixed
+    });
+
+    res.json({
+      success: true,
+      message: 'Default categories created successfully',
+      alreadyMigrated: false,
+      categoriesCreated: categories.length,
+      orphanExpensesFixed
+    });
+  } catch (error) {
+    logger.logError(error, null, {
+      context: 'ensure-user-default-categories',
+      userId: req.userId
+    });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
  * Migrate all existing users to have default categories
  * and assign orphan expenses to "No Category"
+ * ADMIN ONLY - Migrates all users in the system
  */
 const migrateDefaultCategories = async (req, res) => {
   try {
@@ -70,7 +147,6 @@ const migrateDefaultCategories = async (req, res) => {
         // Assign orphan expenses to "No Category"
         const updatedCount = await assignNoCategoryToOrphanExpenses(user.id);
         results.expensesUpdated += updatedCount;
-
       } catch (error) {
         logger.logError(error, null, {
           context: 'migrate-user-categories',
@@ -189,4 +265,9 @@ const fixOrphanExpenses = async (req, res) => {
   }
 };
 
-export { migrateDefaultCategories, checkMigrationStatus, fixOrphanExpenses };
+export {
+  ensureUserDefaultCategories,
+  migrateDefaultCategories,
+  checkMigrationStatus,
+  fixOrphanExpenses
+};

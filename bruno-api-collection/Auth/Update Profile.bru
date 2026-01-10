@@ -1,0 +1,55 @@
+meta {
+  name: Update Profile
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/v1/auth/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "John Doe Updated"
+  }
+}
+
+docs {
+  # Update Profile
+  
+  Update user profile information. Email can be changed but name cannot be empty.
+  Password can be updated here as well (use Change Password endpoint for better UX).
+  
+  ## Request Body
+  - `name` (optional): User's full name
+  - `email` (optional): User's email address (must be unique)
+  - `password` (optional): New password (min 6 characters)
+  
+  ## Notes
+  - Requires authentication
+  - Email must be unique if changing
+  - For mobile app: Name is editable, email is read-only
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.be.a('string');
+  });
+  
+  test("Response has updated user object", function() {
+    expect(res.body.user).to.be.an('object');
+    expect(res.body.user).to.have.property('id');
+    expect(res.body.user).to.have.property('email');
+    expect(res.body.user).to.have.property('name');
+  });
+}
