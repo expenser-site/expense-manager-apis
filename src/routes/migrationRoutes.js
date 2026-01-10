@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  ensureUserDefaultCategories,
   migrateDefaultCategories,
   checkMigrationStatus,
   fixOrphanExpenses
@@ -7,6 +8,13 @@ import {
 import authMiddleware from '../middleware/auth.js';
 
 const router = express.Router();
+
+/**
+ * @route   POST /api/v1/migration/ensure-categories
+ * @desc    Ensure current user has default categories (call after login)
+ * @access  Private
+ */
+router.post('/ensure-categories', authMiddleware, ensureUserDefaultCategories);
 
 /**
  * @route   POST /api/v1/migration/default-categories

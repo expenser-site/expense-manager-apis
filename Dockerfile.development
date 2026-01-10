@@ -70,4 +70,5 @@ EXPOSE 9229
 
 # Regenerate Prisma client, apply migrations, and start Express with nodemon
 # Prisma client must be regenerated at runtime because volume mounts can overwrite it
+# CMD [ "sh", "-c", "echo '🚀 Starting development environment...' && echo '🔧 Generating Prisma client...' && pnpm prisma:generate && echo '📦 Applying database migrations...' && pnpm prisma:deploy && echo '✅ Setup complete!' && echo '🔥 Starting Express with hot reload...' && pnpm prisma:seed && pnpm dev" ]
 CMD [ "sh", "-c", "echo '🚀 Starting development environment...' && echo '🔧 Generating Prisma client...' && pnpm prisma:generate && echo '📦 Applying database migrations...' && pnpm prisma:deploy && echo '✅ Setup complete!' && echo '🔥 Starting Express with hot reload...' && pnpm dev" ]

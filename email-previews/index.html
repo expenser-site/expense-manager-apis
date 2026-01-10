@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expenser Email Templates Preview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 36px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    }
+    
+    .card h2 {
+      color: #1f2937;
+      margin-bottom: 12px;
+      font-size: 20px;
+    }
+    
+    .card p {
+      color: #6b7280;
+      margin-bottom: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .card a {
+      display: inline-block;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    
+    .card a:hover {
+      opacity: 0.9;
+    }
+    
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 60px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📧 Expenser Email Templates</h1>
+    
+    <div class="grid">
+      <div class="card">
+        <h2>🎉 Welcome Email</h2>
+        <p>Sent after successful registration to welcome new users and guide them to get started.</p>
+        <a href="welcome.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>✉️ Email Verification</h2>
+        <p>Sent after registration to verify the user's email address with a verification link and code.</p>
+        <a href="email-verification.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>🔐 Forgot Password</h2>
+        <p>Sent when user requests password reset with a secure time-limited reset link.</p>
+        <a href="forgot-password.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>✅ Password Changed</h2>
+        <p>Confirmation email sent after successful password change with security details.</p>
+        <a href="password-changed.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>🔓 Reset Password</h2>
+        <p>Confirmation sent after successful password reset with login button.</p>
+        <a href="reset-password.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>🔢 OTP Verification</h2>
+        <p>One-time password sent for sensitive operations and login verification.</p>
+        <a href="otp-verification.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>⏰ OTP Expiration</h2>
+        <p>Notification when user's OTP code has expired with option to request new one.</p>
+        <a href="otp-expiration.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>🎯 Getting Started</h2>
+        <p>Onboarding guide to help new users get the most out of Expenser.</p>
+        <a href="getting-started.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>⚠️ Account Deletion</h2>
+        <p>Notification when account deletion is scheduled with option to cancel.</p>
+        <a href="account-deletion.html" target="_blank">Preview Template →</a>
+      </div>
+      
+      <div class="card">
+        <h2>📦 Data Export</h2>
+        <p>Notification when user's data export is ready for download.</p>
+        <a href="data-export.html" target="_blank">Preview Template →</a>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>These are preview templates with sample data.</p>
+      <p>© 2026 Expenser. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

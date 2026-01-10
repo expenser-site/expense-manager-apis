@@ -24,7 +24,7 @@ export const DEFAULT_CATEGORIES = [
  * @param {string} userId - The user's ID
  * @returns {Promise<Object>} Object containing noCategoryId and all created categories
  */
-export const createDefaultCategories = async (userId) => {
+export const createDefaultCategories = async userId => {
   try {
     const createdCategories = await prisma.$transaction(
       DEFAULT_CATEGORIES.map(category =>
@@ -42,10 +42,10 @@ export const createDefaultCategories = async (userId) => {
     // Find the "No Category" entry
     const noCategoryEntry = createdCategories.find(cat => cat.name === 'No Category');
 
-    logger.info(
-      `Created ${createdCategories.length} default categories for user ${userId}`,
-      { userId, categoriesCount: createdCategories.length }
-    );
+    logger.info(`Created ${createdCategories.length} default categories for user ${userId}`, {
+      userId,
+      categoriesCount: createdCategories.length
+    });
 
     return {
       noCategoryId: noCategoryEntry?.id,
@@ -65,7 +65,7 @@ export const createDefaultCategories = async (userId) => {
  * @param {string} userId - The user's ID
  * @returns {Promise<string>} The "No Category" ID
  */
-export const getOrCreateNoCategory = async (userId) => {
+export const getOrCreateNoCategory = async userId => {
   try {
     // Try to find existing "No Category"
     let noCategory = await prisma.category.findFirst({
@@ -103,7 +103,7 @@ export const getOrCreateNoCategory = async (userId) => {
  * @param {string} userId - The user's ID
  * @returns {Promise<number>} Number of expenses updated
  */
-export const assignNoCategoryToOrphanExpenses = async (userId) => {
+export const assignNoCategoryToOrphanExpenses = async userId => {
   try {
     const noCategoryId = await getOrCreateNoCategory(userId);
 
@@ -131,10 +131,10 @@ export const assignNoCategoryToOrphanExpenses = async (userId) => {
       }
     });
 
-    logger.info(
-      `Assigned "No Category" to ${updateResult.count} expenses for user ${userId}`,
-      { userId, updatedCount: updateResult.count }
-    );
+    logger.info(`Assigned "No Category" to ${updateResult.count} expenses for user ${userId}`, {
+      userId,
+      updatedCount: updateResult.count
+    });
 
     return updateResult.count;
   } catch (error) {
