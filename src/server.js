@@ -28,14 +28,22 @@ const PORT = process.env.PORT || 3000;
   }
 })();
 
-// CORS configuration for multiple origins
-const allowedOrigins = [
-  'http://localhost:5173', // Web app (Vite)
-  'http://localhost:8081', // Mobile app (Expo web)
-  'http://localhost:19006', // Mobile app (Expo alternative port)
-  'http://localhost:19000', // Mobile app (Expo Metro bundler)
-  'exp://localhost:8081' // Expo development
-];
+// CORS configuration based on environment
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [
+    // Production URLs
+    'https://app.expenser.site', // Production web app
+    'https://expenser.site', // Landing page
+    'https://www.expenser.site' // Landing page with www
+  ]
+  : [
+    // Development URLs
+    'http://localhost:5173', // Web app (Vite)
+    'http://localhost:8081', // Mobile app (Expo web)
+    'http://localhost:19006', // Mobile app (Expo alternative port)
+    'http://localhost:19000', // Mobile app (Expo Metro bundler)
+    'exp://localhost:8081' // Expo development
+  ];
 
 // Middleware
 app.use(
@@ -45,6 +53,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        logger.warn('CORS blocked request', { origin, allowedOrigins });
         callback(new Error('Not allowed by CORS'));
       }
     },
