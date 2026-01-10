@@ -36,9 +36,10 @@ export const getHealthDetailed = async (req, res) => {
       await Promise.race([dbCheckPromise, timeoutPromise]);
     } catch (error) {
       databaseStatus = 'disconnected';
-      databaseMessage = error.message === 'Database check timeout'
-        ? 'Database connection timeout'
-        : 'Database connection failed';
+      databaseMessage =
+        error.message === 'Database check timeout'
+          ? 'Database connection timeout'
+          : 'Database connection failed';
     }
 
     // Check HATEOAS health
@@ -105,9 +106,10 @@ export const getHealthDetailed = async (req, res) => {
           used: Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100,
           total: Math.round((process.memoryUsage().heapTotal / 1024 / 1024) * 100) / 100,
           unit: 'MB',
-          warning: process.memoryUsage().heapUsed / process.memoryUsage().heapTotal > 0.9
-            ? 'Memory usage exceeds 90%'
-            : null
+          warning:
+            process.memoryUsage().heapUsed / process.memoryUsage().heapTotal > 0.9
+              ? 'Memory usage exceeds 90%'
+              : null
         }
       }
     };

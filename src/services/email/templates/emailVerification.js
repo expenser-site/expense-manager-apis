@@ -15,7 +15,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const emailVerificationTemplate = (data) => {
+const emailVerificationTemplate = data => {
   const { name, verificationUrl, verificationCode, expiryMinutes = 60 } = data;
 
   const content = createContent(`
@@ -27,16 +27,20 @@ const emailVerificationTemplate = (data) => {
     
     ${createButton('Verify Email Address', verificationUrl, 'success')}
     
-    ${verificationCode ? `
+    ${
+      verificationCode
+        ? `
       ${createDivider()}
       ${createParagraph('Or enter this verification code:')}
       ${createCodeBlock(verificationCode, 'Verification Code')}
       ${createDivider()}
-    ` : ''}
+    `
+        : ''
+    }
     
     ${createWarningBox(`This link expires in <strong>${expiryMinutes} minutes</strong>.`)}
     
-    ${createParagraph('If you didn\'t create an account, you can safely ignore this email.')}
+    ${createParagraph("If you didn't create an account, you can safely ignore this email.")}
     
     ${createParagraph('Best regards,<br>The Expenser Team')}
   `);

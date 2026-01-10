@@ -13,7 +13,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const resetPasswordTemplate = (data) => {
+const resetPasswordTemplate = data => {
   const { name, loginUrl } = data;
   const appUrl = loginUrl || process.env.FRONTEND_URL || 'https://app.expenser.site/login';
   const supportEmail = 'support@expenser.site';

@@ -19,10 +19,7 @@ router.post(
   [
     body('title').notEmpty().withMessage('Title is required'),
     body('amount').isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
-    body('categoryId')
-      .optional()
-      .isUUID()
-      .withMessage('Category ID must be a valid UUID')
+    body('categoryId').optional().isUUID().withMessage('Category ID must be a valid UUID')
   ],
   createExpense
 );
@@ -46,9 +43,7 @@ router.post(
     body('expenseIds')
       .isArray({ min: 1, max: 100 })
       .withMessage('expenseIds must be an array with 1-100 items'),
-    body('expenseIds.*')
-      .isUUID()
-      .withMessage('Each expense ID must be a valid UUID')
+    body('expenseIds.*').isUUID().withMessage('Each expense ID must be a valid UUID')
   ],
   bulkDeleteExpenses
 );

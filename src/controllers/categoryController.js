@@ -48,10 +48,7 @@ const createCategory = async (req, res) => {
     res.status(201).json({
       message: 'Category created successfully',
       category: addCategoryLinks(category),
-      _links: [
-        categoryLinks.self(category.id),
-        categoryLinks.collection()
-      ]
+      _links: [categoryLinks.self(category.id), categoryLinks.collection()]
     });
   } catch (error) {
     logger.logError(error, null, { context: 'create-category' });
@@ -71,7 +68,13 @@ const getCategories = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Sanitize search parameter
-    const sanitizedSearch = search ? search.toString().trim().substring(0, 100).replace(/[;'"\\]/g, '') : '';
+    const sanitizedSearch = search
+      ? search
+          .toString()
+          .trim()
+          .substring(0, 100)
+          .replace(/[;'"\\]/g, '')
+      : '';
 
     // Build where clause
     const where = {
@@ -95,61 +98,62 @@ const getCategories = async (req, res) => {
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-    const [categories, total, totalAmounts, currentMonthAmounts, lastMonthAmounts] = await Promise.all([
-      prisma.category.findMany({
-        where,
-        skip: parseInt(skip),
-        take: parseInt(limit),
-        orderBy: {
-          [sortField]: order
-        },
-        include: {
-          _count: {
-            select: { expenses: true }
+    const [categories, total, totalAmounts, currentMonthAmounts, lastMonthAmounts] =
+      await Promise.all([
+        prisma.category.findMany({
+          where,
+          skip: parseInt(skip),
+          take: parseInt(limit),
+          orderBy: {
+            [sortField]: order
+          },
+          include: {
+            _count: {
+              select: { expenses: true }
+            }
           }
-        }
-      }),
-      prisma.category.count({
-        where
-      }),
-      // Single query for all total amounts grouped by category
-      prisma.expense.groupBy({
-        by: ['categoryId'],
-        where: {
-          userId: req.userId
-        },
-        _sum: {
-          amount: true
-        }
-      }),
-      // Single query for current month amounts grouped by category
-      prisma.expense.groupBy({
-        by: ['categoryId'],
-        where: {
-          userId: req.userId,
-          date: {
-            gte: currentMonth
+        }),
+        prisma.category.count({
+          where
+        }),
+        // Single query for all total amounts grouped by category
+        prisma.expense.groupBy({
+          by: ['categoryId'],
+          where: {
+            userId: req.userId
+          },
+          _sum: {
+            amount: true
           }
-        },
-        _sum: {
-          amount: true
-        }
-      }),
-      // Single query for last month amounts grouped by category
-      prisma.expense.groupBy({
-        by: ['categoryId'],
-        where: {
-          userId: req.userId,
-          date: {
-            gte: lastMonth,
-            lte: lastMonthEnd
+        }),
+        // Single query for current month amounts grouped by category
+        prisma.expense.groupBy({
+          by: ['categoryId'],
+          where: {
+            userId: req.userId,
+            date: {
+              gte: currentMonth
+            }
+          },
+          _sum: {
+            amount: true
           }
-        },
-        _sum: {
-          amount: true
-        }
-      })
-    ]);
+        }),
+        // Single query for last month amounts grouped by category
+        prisma.expense.groupBy({
+          by: ['categoryId'],
+          where: {
+            userId: req.userId,
+            date: {
+              gte: lastMonth,
+              lte: lastMonthEnd
+            }
+          },
+          _sum: {
+            amount: true
+          }
+        })
+      ]);
 
     // Create lookup maps for O(1) access
     const totalAmountMap = new Map(
@@ -342,7 +346,7 @@ const deleteCategory = async (req, res) => {
     }
 
     // Use transaction to handle category deletion with expense reassignment
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // If category has expenses, reassign them
       if (category._count.expenses > 0) {
         let targetCategoryId = reassignToCategoryId;

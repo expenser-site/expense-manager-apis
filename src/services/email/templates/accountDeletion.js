@@ -14,7 +14,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const accountDeletionTemplate = (data) => {
+const accountDeletionTemplate = data => {
   const { name, deletionDate, cancelUrl, daysUntilDeletion = 30 } = data;
   const appUrl = cancelUrl || process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard';
 

@@ -13,7 +13,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const otpExpirationTemplate = (data) => {
+const otpExpirationTemplate = data => {
   const { name, requestNewOtpUrl } = data;
   const appUrl = requestNewOtpUrl || process.env.FRONTEND_URL || 'https://app.expenser.site/login';
 

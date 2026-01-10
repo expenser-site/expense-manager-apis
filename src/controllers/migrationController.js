@@ -147,7 +147,6 @@ const migrateDefaultCategories = async (req, res) => {
         // Assign orphan expenses to "No Category"
         const updatedCount = await assignNoCategoryToOrphanExpenses(user.id);
         results.expensesUpdated += updatedCount;
-
       } catch (error) {
         logger.logError(error, null, {
           context: 'migrate-user-categories',

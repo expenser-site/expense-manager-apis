@@ -23,7 +23,7 @@ const theme = {
 /**
  * Create base HTML email structure
  */
-const createEmailWrapper = (content) => {
+const createEmailWrapper = content => {
   return `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -97,8 +97,9 @@ const createEmailWrapper = (content) => {
 /**
  * Create email header with branding
  */
-const createHeader = (title) => {
-  const logoSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" style="width: 48px; height: 48px; margin: 0 auto 12px; display: block;"><rect width="32" height="32" rx="6" fill="#ffffff"/><g stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(8, 8)"><path d="M19 7v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l3 3-3 3z"/><path d="M3 7h12"/><path d="M12 11v.01"/></g></svg>';
+const createHeader = title => {
+  const logoSvg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" style="width: 48px; height: 48px; margin: 0 auto 12px; display: block;"><rect width="32" height="32" rx="6" fill="#ffffff"/><g stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(8, 8)"><path d="M19 7v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l3 3-3 3z"/><path d="M3 7h12"/><path d="M12 11v.01"/></g></svg>';
 
   return `
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: auto;">
@@ -206,7 +207,7 @@ const createInfoBox = (content, icon = 'ℹ️') => {
 /**
  * Create a warning box
  */
-const createWarningBox = (content) => {
+const createWarningBox = content => {
   return `
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
       <tr>
@@ -224,7 +225,7 @@ const createWarningBox = (content) => {
 /**
  * Create a success box
  */
-const createSuccessBox = (content) => {
+const createSuccessBox = content => {
   return `
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
       <tr>
@@ -242,7 +243,7 @@ const createSuccessBox = (content) => {
 /**
  * Create an error/danger box
  */
-const createErrorBox = (content) => {
+const createErrorBox = content => {
   return `
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
       <tr>
@@ -282,10 +283,11 @@ const createCodeBlock = (code, label = 'Code') => {
 /**
  * Create a list of items
  */
-const createList = (items) => {
+const createList = items => {
   const listItems = items
     .filter(item => item !== null && item !== undefined)
-    .map(item => `
+    .map(
+      item => `
       <tr>
         <td style="padding: 6px 0;">
           <p style="margin: 0; font-family: Arial, sans-serif; font-size: 14px; color: ${theme.text}; line-height: 1.6;">
@@ -293,7 +295,9 @@ const createList = (items) => {
           </p>
         </td>
       </tr>
-    `).join('');
+    `
+    )
+    .join('');
 
   return `
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 12px 0;">
@@ -318,7 +322,7 @@ const createDivider = () => {
 /**
  * Create content section
  */
-const createContent = (content) => {
+const createContent = content => {
   return `
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: auto;">
       <tr>

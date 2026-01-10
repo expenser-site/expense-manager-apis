@@ -13,7 +13,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const otpVerificationTemplate = (data) => {
+const otpVerificationTemplate = data => {
   const { name, otp, expiryMinutes = 10 } = data;
 
   const content = createContent(`

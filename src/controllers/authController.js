@@ -9,7 +9,9 @@ import { addUserLinks, userLinks } from '../utils/hateoas.js';
 
 // Validate JWT secret at module load
 if (!process.env.JWT_SECRET) {
-  logger.logError(new Error('JWT_SECRET is not defined'), null, { context: 'auth-controller-init' });
+  logger.logError(new Error('JWT_SECRET is not defined'), null, {
+    context: 'auth-controller-init'
+  });
   throw new Error('FATAL: JWT_SECRET environment variable is required');
 }
 
@@ -38,7 +40,7 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Use transaction to ensure atomic user creation with default categories
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async tx => {
       const newUser = await tx.user.create({
         data: {
           email,
@@ -85,7 +87,7 @@ const register = async (req, res) => {
         name: user.name,
         loginUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard'
       })
-      .catch((error) => {
+      .catch(error => {
         logger.logError(error, null, {
           context: 'send-welcome-email',
           userId: user.id
@@ -99,7 +101,7 @@ const register = async (req, res) => {
           name: user.name,
           dashboardUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard'
         })
-        .catch((error) => {
+        .catch(error => {
           logger.logError(error, null, {
             context: 'send-getting-started-email',
             userId: user.id
@@ -111,10 +113,7 @@ const register = async (req, res) => {
       message: 'User registered successfully',
       user: addUserLinks(user),
       token,
-      _links: [
-        userLinks.self(),
-        userLinks.dashboard()
-      ]
+      _links: [userLinks.self(), userLinks.dashboard()]
     });
   } catch (error) {
     logger.logError(error, null, { context: 'user-registration' });
@@ -162,10 +161,7 @@ const login = async (req, res) => {
         authProvider: user.authProvider
       }),
       token,
-      _links: [
-        userLinks.self(),
-        userLinks.dashboard()
-      ]
+      _links: [userLinks.self(), userLinks.dashboard()]
     });
   } catch (error) {
     logger.logError(error, null, { context: 'user-login' });
@@ -295,7 +291,9 @@ const changePassword = async (req, res) => {
     // Check if new password is same as current password
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
-      return res.status(400).json({ error: 'New password must be different from current password' });
+      return res
+        .status(400)
+        .json({ error: 'New password must be different from current password' });
     }
 
     // Hash and update new password
@@ -312,7 +310,7 @@ const changePassword = async (req, res) => {
         changedAt: new Date(),
         loginUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/login'
       })
-      .catch((error) => {
+      .catch(error => {
         logger.logError(error, null, {
           context: 'send-password-changed-email',
           userId: user.id
@@ -365,7 +363,7 @@ const deleteAccount = async (req, res) => {
         cancelUrl: null, // No cancel option since already deleted
         daysUntilDeletion: 0
       })
-      .catch((error) => {
+      .catch(error => {
         logger.logError(error, null, {
           context: 'send-account-deletion-email',
           userId: user.id
@@ -449,7 +447,7 @@ const forgotPassword = async (req, res) => {
           email: user.email
         });
       })
-      .catch((error) => {
+      .catch(error => {
         logger.logError(error, null, {
           context: 'send-forgot-password-email',
           userId: user.id,
@@ -518,7 +516,7 @@ const resetPassword = async (req, res) => {
         name: user.name,
         loginUrl: process.env.FRONTEND_URL || 'https://app.expenser.site/login'
       })
-      .catch((error) => {
+      .catch(error => {
         logger.logError(error, null, {
           context: 'send-reset-password-email',
           userId: user.id

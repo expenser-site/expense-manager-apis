@@ -96,10 +96,7 @@ const createExpense = async (req, res) => {
     res.status(201).json({
       message: 'Expense created successfully',
       expense: addExpenseLinks(expense),
-      _links: [
-        expenseLinks.self(expense.id),
-        expenseLinks.collection()
-      ]
+      _links: [expenseLinks.self(expense.id), expenseLinks.collection()]
     });
   } catch (error) {
     logger.logError(error, null, { context: 'create-expense' });
@@ -352,10 +349,7 @@ const deleteExpense = async (req, res) => {
 
     res.json({
       message: 'Expense deleted successfully',
-      _links: [
-        expenseLinks.collection(),
-        expenseLinks.create()
-      ]
+      _links: [expenseLinks.collection(), expenseLinks.create()]
     });
   } catch (error) {
     logger.logError(error, null, { context: 'delete-expense' });
@@ -402,4 +396,11 @@ const bulkDeleteExpenses = async (req, res) => {
   }
 };
 
-export { createExpense, getExpenses, getExpenseById, updateExpense, deleteExpense, bulkDeleteExpenses };
+export {
+  createExpense,
+  getExpenses,
+  getExpenseById,
+  updateExpense,
+  deleteExpense,
+  bulkDeleteExpenses
+};

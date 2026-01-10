@@ -108,7 +108,7 @@ passport.use(
             email: user.email,
             loginUrl: process.env.FRONTEND_URL || 'https://expenser.site'
           })
-          .catch((error) => {
+          .catch(error => {
             logger.logError(error, null, {
               context: 'send-welcome-email-oauth',
               userId: user.id
@@ -121,7 +121,7 @@ passport.use(
             .sendGettingStartedEmail(user.email, {
               name: user.name
             })
-            .catch((error) => {
+            .catch(error => {
               logger.logError(error, null, {
                 context: 'send-getting-started-email-oauth',
                 userId: user.id
@@ -132,7 +132,12 @@ passport.use(
         logger.info('New user created with Google', { userId: user.id, email });
         return done(null, user);
       } catch (error) {
-        logger.error('Error occurred', { service: process.env.APP_NAME, environment: process.env.NODE_ENV, stack: error.stack, context: 'google-oauth' });
+        logger.error('Error occurred', {
+          service: process.env.APP_NAME,
+          environment: process.env.NODE_ENV,
+          stack: error.stack,
+          context: 'google-oauth'
+        });
         return done(error, null);
       }
     }

@@ -19,10 +19,7 @@ export const conditionalCache = (req, res, next) => {
   res.json = function (data) {
     // Generate ETag from response body
     const content = JSON.stringify(data);
-    const etag = crypto
-      .createHash('md5')
-      .update(content)
-      .digest('hex');
+    const etag = crypto.createHash('md5').update(content).digest('hex');
 
     // Set caching headers
     res.setHeader('ETag', `"${etag}"`);

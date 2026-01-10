@@ -13,7 +13,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const forgotPasswordTemplate = (data) => {
+const forgotPasswordTemplate = data => {
   // eslint-disable-next-line no-unused-vars
   const { name, resetUrl, resetToken, expiryMinutes = 15 } = data;
 
@@ -30,7 +30,7 @@ const forgotPasswordTemplate = (data) => {
     
     ${createWarningBox(`This link expires in <strong>${expiryMinutes} minutes</strong>.`)}
     
-    ${createParagraph('If you didn\'t request this, please ignore this email.')}
+    ${createParagraph("If you didn't request this, please ignore this email.")}
     
     ${createParagraph('Best regards,<br>The Expenser Team')}
   `);

@@ -14,7 +14,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const gettingStartedTemplate = (data) => {
+const gettingStartedTemplate = data => {
   const { name, dashboardUrl } = data;
   const appUrl = dashboardUrl || process.env.FRONTEND_URL || 'https://app.expenser.site/dashboard';
   const supportEmail = 'support@expenser.site';
@@ -22,16 +22,16 @@ const gettingStartedTemplate = (data) => {
   const content = createContent(`
     ${createParagraph(`Hello <strong>${name}</strong>,`)}
     
-    ${createSuccessBox('Welcome to Expenser! Let\'s get you started.')}
+    ${createSuccessBox("Welcome to Expenser! Let's get you started.")}
     
-    ${createParagraph('Here\'s how to make the most of Expenser:')}
+    ${createParagraph("Here's how to make the most of Expenser:")}
     
     ${createList([
-    '<strong>Add expenses</strong> - Track your spending as it happens',
-    '<strong>Use categories</strong> - Organize expenses your way',
-    '<strong>View analytics</strong> - See your spending patterns',
-    '<strong>Set budgets</strong> - Stay on track with your goals'
-  ])}
+      '<strong>Add expenses</strong> - Track your spending as it happens',
+      '<strong>Use categories</strong> - Organize expenses your way',
+      '<strong>View analytics</strong> - See your spending patterns',
+      '<strong>Set budgets</strong> - Stay on track with your goals'
+    ])}
     
     ${createDivider()}
     

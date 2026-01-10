@@ -65,7 +65,7 @@ const createLink = (rel, href, method = 'GET', description = '') => {
  * Generate links for expense resources
  */
 const expenseLinks = {
-  self: (expenseId) => {
+  self: expenseId => {
     if (!validateUUID(expenseId)) {
       logger.warn(`Invalid expense ID for HATEOAS link: ${expenseId}`);
       return null;
@@ -73,7 +73,7 @@ const expenseLinks = {
     return createLink('self', `/v1/expenses/${expenseId}`, 'GET', 'Get this expense');
   },
 
-  update: (expenseId) => {
+  update: expenseId => {
     if (!validateUUID(expenseId)) {
       logger.warn(`Invalid expense ID for update link: ${expenseId}`);
       return null;
@@ -81,7 +81,7 @@ const expenseLinks = {
     return createLink('update', `/v1/expenses/${expenseId}`, 'PUT', 'Update this expense');
   },
 
-  delete: (expenseId) => {
+  delete: expenseId => {
     if (!validateUUID(expenseId)) {
       logger.warn(`Invalid expense ID for delete link: ${expenseId}`);
       return null;
@@ -99,12 +99,17 @@ const expenseLinks = {
       createLink('create', '/v1/expenses', 'POST', 'Create a new expense')
     ),
 
-  category: (categoryId) => {
+  category: categoryId => {
     if (!validateUUID(categoryId)) {
       logger.warn(`Invalid category ID for HATEOAS link: ${categoryId}`);
       return null;
     }
-    return createLink('category', `/v1/categories/${categoryId}`, 'GET', 'Get the category for this expense');
+    return createLink(
+      'category',
+      `/v1/categories/${categoryId}`,
+      'GET',
+      'Get the category for this expense'
+    );
   },
 
   bulkDelete: () =>
@@ -117,7 +122,7 @@ const expenseLinks = {
  * Generate links for category resources
  */
 const categoryLinks = {
-  self: (categoryId) => {
+  self: categoryId => {
     if (!validateUUID(categoryId)) {
       logger.warn(`Invalid category ID for HATEOAS link: ${categoryId}`);
       return null;
@@ -125,7 +130,7 @@ const categoryLinks = {
     return createLink('self', `/v1/categories/${categoryId}`, 'GET', 'Get this category');
   },
 
-  update: (categoryId) => {
+  update: categoryId => {
     if (!validateUUID(categoryId)) {
       logger.warn(`Invalid category ID for update link: ${categoryId}`);
       return null;
@@ -133,7 +138,7 @@ const categoryLinks = {
     return createLink('update', `/v1/categories/${categoryId}`, 'PUT', 'Update this category');
   },
 
-  delete: (categoryId) => {
+  delete: categoryId => {
     if (!validateUUID(categoryId)) {
       logger.warn(`Invalid category ID for delete link: ${categoryId}`);
       return null;
@@ -151,7 +156,7 @@ const categoryLinks = {
       createLink('create', '/v1/categories', 'POST', 'Create a new category')
     ),
 
-  expenses: (categoryId) => {
+  expenses: categoryId => {
     if (!validateUUID(categoryId)) {
       logger.warn(`Invalid category ID for expenses link: ${categoryId}`);
       return null;
@@ -243,7 +248,7 @@ const userLinks = {
 /**
  * Add links to a single expense object
  */
-const addExpenseLinks = (expense) => {
+const addExpenseLinks = expense => {
   if (!expense || !expense.id) {
     logger.warn('Cannot add links to invalid expense object');
     return expense;
@@ -272,7 +277,7 @@ const addExpenseLinks = (expense) => {
 /**
  * Add links to a single category object
  */
-const addCategoryLinks = (category) => {
+const addCategoryLinks = category => {
   if (!category || !category.id) {
     logger.warn('Cannot add links to invalid category object');
     return category;
@@ -308,12 +313,7 @@ const addCollectionLinks = (baseUrl, pagination) => {
     // Previous page
     if (page > 1) {
       links.push(
-        createLink(
-          'prev',
-          `${baseUrl}?page=${page - 1}&limit=${limit}`,
-          'GET',
-          'Previous page'
-        )
+        createLink('prev', `${baseUrl}?page=${page - 1}&limit=${limit}`, 'GET', 'Previous page')
       );
     }
 
@@ -326,9 +326,7 @@ const addCollectionLinks = (baseUrl, pagination) => {
 
     // Last page
     if (page < pages) {
-      links.push(
-        createLink('last', `${baseUrl}?page=${pages}&limit=${limit}`, 'GET', 'Last page')
-      );
+      links.push(createLink('last', `${baseUrl}?page=${pages}&limit=${limit}`, 'GET', 'Last page'));
     }
   }
 
@@ -338,7 +336,7 @@ const addCollectionLinks = (baseUrl, pagination) => {
 /**
  * Add links to user profile
  */
-const addUserLinks = (user) => {
+const addUserLinks = user => {
   if (!user) {
     logger.warn('Cannot add links to invalid user object');
     return user;

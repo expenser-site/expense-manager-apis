@@ -14,7 +14,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const passwordChangedTemplate = (data) => {
+const passwordChangedTemplate = data => {
   const { name, changedAt, loginUrl } = data;
   const appUrl = loginUrl || process.env.FRONTEND_URL || 'https://app.expenser.site/login';
   const supportEmail = 'support@expenser.site';

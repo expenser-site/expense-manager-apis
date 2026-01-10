@@ -206,13 +206,15 @@ const getMonthlyTrends = async (req, res) => {
 
     // Create a map for quick lookup
     const trendsMap = new Map(
-      monthlyTrends.map(t => ({
-        key: t.month,
-        value: {
-          totalAmount: parseFloat(t.totalAmount),
-          count: t.count
-        }
-      })).map(item => [item.key, item.value])
+      monthlyTrends
+        .map(t => ({
+          key: t.month,
+          value: {
+            totalAmount: parseFloat(t.totalAmount),
+            count: t.count
+          }
+        }))
+        .map(item => [item.key, item.value])
     );
 
     // Build complete monthly data array for the date range
@@ -235,11 +237,7 @@ const getMonthlyTrends = async (req, res) => {
 
     res.json({
       trends: monthlyData,
-      _links: [
-        dashboardLinks.monthlyTrends(),
-        dashboardLinks.summary(),
-        dashboardLinks.expenses()
-      ]
+      _links: [dashboardLinks.monthlyTrends(), dashboardLinks.summary(), dashboardLinks.expenses()]
     });
   } catch (error) {
     logger.logError(error, null, {
@@ -294,11 +292,7 @@ const getRecentExpenses = async (req, res) => {
 
     res.json({
       expenses: expensesWithLinks,
-      _links: [
-        dashboardLinks.recentExpenses(),
-        dashboardLinks.summary(),
-        dashboardLinks.expenses()
-      ]
+      _links: [dashboardLinks.recentExpenses(), dashboardLinks.summary(), dashboardLinks.expenses()]
     });
   } catch (error) {
     logger.logError(error, null, { context: 'recent-expenses' });

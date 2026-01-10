@@ -30,37 +30,41 @@ const PORT = process.env.PORT || 3000;
 
 // CORS configuration for multiple origins
 const allowedOrigins = [
-  'http://localhost:5173',    // Web app (Vite)
-  'http://localhost:8081',    // Mobile app (Expo web)
-  'http://localhost:19006',   // Mobile app (Expo alternative port)
-  'http://localhost:19000',   // Mobile app (Expo Metro bundler)
-  'exp://localhost:8081'     // Expo development
+  'http://localhost:5173', // Web app (Vite)
+  'http://localhost:8081', // Mobile app (Expo web)
+  'http://localhost:19006', // Mobile app (Expo alternative port)
+  'http://localhost:19000', // Mobile app (Expo Metro bundler)
+  'exp://localhost:8081' // Expo development
 ];
 
 // Middleware
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true
+  })
+);
 
 // Response compression (60-80% bandwidth reduction)
-app.use(compression({
-  level: 6, // Balanced compression (0-9, higher = more compression but slower)
-  threshold: 1024, // Only compress responses > 1KB
-  filter: (req, res) => {
-    if (req.headers['x-no-compression']) {
-      return false;
+app.use(
+  compression({
+    level: 6, // Balanced compression (0-9, higher = more compression but slower)
+    threshold: 1024, // Only compress responses > 1KB
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      return compression.filter(req, res);
     }
-    return compression.filter(req, res);
-  }
-}));
+  })
+);
 
 app.use(express.json());
 

@@ -14,7 +14,7 @@ import {
   createParagraph
 } from './emailTemplateUtils.js';
 
-const dataExportTemplate = (data) => {
+const dataExportTemplate = data => {
   const { name, downloadUrl, expiryHours = 48 } = data;
 
   const content = createContent(`
