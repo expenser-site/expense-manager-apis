@@ -106,7 +106,16 @@ const createExpense = async (req, res) => {
 
 const getExpenses = async (req, res) => {
   try {
-    const { page = 1, limit = 10, categoryId, startDate, endDate, search } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      categoryId,
+      startDate,
+      endDate,
+      search,
+      sortBy = 'date',
+      sortOrder = 'desc'
+    } = req.query;
 
     // Sanitize and validate search parameter
     let sanitizedSearch = '';
@@ -134,6 +143,23 @@ const getExpenses = async (req, res) => {
       };
     }
 
+    // Build orderBy based on sortBy parameter
+    let orderBy;
+    if (sortBy === 'category') {
+      orderBy = [
+        { category: { name: sortOrder } },
+        { date: 'desc' } // Secondary sort by date
+      ];
+    } else if (sortBy === 'amount') {
+      orderBy = [
+        { amount: sortOrder },
+        { date: 'desc' } // Secondary sort by date
+      ];
+    } else {
+      // Default to date sorting
+      orderBy = { date: sortOrder };
+    }
+
     const where = {
       userId: req.userId,
       ...(categoryId && { categoryId }),
@@ -149,7 +175,7 @@ const getExpenses = async (req, res) => {
     const [expenses, total] = await Promise.all([
       prisma.expense.findMany({
         where,
-        orderBy: { date: 'desc' },
+        orderBy,
         skip: parseInt(skip),
         take: safeLimit,
         include: {
