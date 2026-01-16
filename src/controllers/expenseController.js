@@ -106,7 +106,16 @@ const createExpense = async (req, res) => {
 
 const getExpenses = async (req, res) => {
   try {
-    const { page = 1, limit = 10, categoryId, startDate, endDate, search, sortBy = 'date', sortOrder = 'desc' } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      categoryId,
+      startDate,
+      endDate,
+      search,
+      sortBy = 'date',
+      sortOrder = 'desc'
+    } = req.query;
 
     // Sanitize and validate search parameter
     let sanitizedSearch = '';
