@@ -28,22 +28,12 @@ const PORT = process.env.PORT || 3000;
   }
 })();
 
-// CORS configuration based on environment
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [
-    // Production URLs
-    'https://app.expenser.site', // Production web app
-    'https://expenser.site', // Landing page
-    'https://www.expenser.site' // Landing page with www
-  ]
-  : [
-    // Development URLs
-    'http://localhost:5173', // Web app (Vite)
-    'http://localhost:8081', // Mobile app (Expo web)
-    'http://localhost:19006', // Mobile app (Expo alternative port)
-    'http://localhost:19000', // Mobile app (Expo Metro bundler)
-    'exp://localhost:8081' // Expo development
-  ];
+// CORS configuration from environment variable
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : process.env.NODE_ENV === 'production'
+    ? ['https://app.expenser.site', 'https://expenser.site', 'https://www.expenser.site']
+    : ['http://localhost:5173']; // Fallback based on environment
 
 // Middleware
 app.use(

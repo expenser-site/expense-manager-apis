@@ -23,7 +23,8 @@ export const conditionalCache = (req, res, next) => {
 
     // Set caching headers
     res.setHeader('ETag', `"${etag}"`);
-    res.setHeader('Cache-Control', 'private, must-revalidate, max-age=60');
+    // No time-based caching for transactional data - always revalidate
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
 
     // Check if client has cached version
     const clientEtag = req.headers['if-none-match'];
