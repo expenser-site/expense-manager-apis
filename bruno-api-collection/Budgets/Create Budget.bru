@@ -1,0 +1,66 @@
+meta {
+  name: Create Budget
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/budgets
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Bonus Budget",
+    "amount": 1500.00,
+    "currency": "USD",
+    "month": 2,
+    "notes": "Monthly grocery budget"
+  }
+}
+
+script:post-response {
+  if (res.status === 201 && res.body.budget) {
+    bru.setEnvVar("budgetId", res.body.budget.id);
+  }
+}
+
+tests {
+  test("Status code is 201", function() {
+    expect(res.status).to.equal(201);
+  });
+  
+  test("Response has budget object", function() {
+    expect(res.body.budget).to.be.an('object');
+    expect(res.body.budget).to.have.property('id');
+    expect(res.body.budget).to.have.property('amount');
+    expect(res.body.budget).to.have.property('currency');
+    expect(res.body.budget).to.have.property('period');
+    expect(res.body.budget).to.have.property('userId');
+  });
+  
+  test("Budget has correct amount", function() {
+    expect(res.body.budget.amount).to.equal(1500);
+  });
+  
+  test("Budget has correct period", function() {
+    expect(res.body.budget.period).to.equal('monthly');
+  });
+  
+  test("Budget year defaults to current year if not provided", function() {
+    const currentYear = new Date().getFullYear();
+    expect(res.body.budget.year).to.equal(currentYear);
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('object');
+    expect(res.body._links).to.have.property('self');
+    expect(res.body._links).to.have.property('update');
+    expect(res.body._links).to.have.property('delete');
+  });
+}

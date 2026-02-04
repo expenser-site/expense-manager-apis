@@ -99,7 +99,7 @@ const createExpense = async (req, res) => {
       _links: [expenseLinks.self(expense.id), expenseLinks.collection()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'create-expense' });
+    logger.logError(error, req, { context: 'create-expense' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -209,7 +209,7 @@ const getExpenses = async (req, res) => {
       })
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'get-expenses' });
+    logger.logError(error, req, { context: 'get-expenses' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -236,7 +236,7 @@ const getExpenseById = async (req, res) => {
       expense: addExpenseLinks(expense)
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'get-expense-by-id' });
+    logger.logError(error, req, { context: 'get-expense-by-id' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -349,7 +349,7 @@ const updateExpense = async (req, res) => {
       expense: addExpenseLinks(expense)
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'update-expense' });
+    logger.logError(error, req, { context: 'update-expense' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -378,7 +378,7 @@ const deleteExpense = async (req, res) => {
       _links: [expenseLinks.collection(), expenseLinks.create()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'delete-expense' });
+    logger.logError(error, req, { context: 'delete-expense' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -417,7 +417,7 @@ const bulkDeleteExpenses = async (req, res) => {
       requestedCount: expenseIds.length
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'bulk-delete-expenses' });
+    logger.logError(error, req, { context: 'bulk-delete-expenses' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };

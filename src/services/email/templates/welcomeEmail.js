@@ -22,7 +22,7 @@ const welcomeEmailTemplate = data => {
     
     ${createSuccessBox('Welcome to Expenser! Your account has been created successfully.')}
     
-    ${createParagraph("We're excited to help you take control of your expenses and achieve your financial goals.")}
+    ${createParagraph('We\'re excited to help you take control of your expenses and achieve your financial goals.')}
     
     ${createDivider()}
     
@@ -44,7 +44,7 @@ const welcomeEmailTemplate = data => {
   `);
 
   return {
-    subject: "🎉 Welcome to Expenser - Let's Start Managing Your Finances!",
+    subject: '🎉 Welcome to Expenser - Let\'s Start Managing Your Finances!',
     html,
     text: `Welcome to Expenser!\n\nHello ${name}! Your account has been created successfully. Visit ${appUrl} to get started.`
   };

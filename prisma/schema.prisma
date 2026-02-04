@@ -27,16 +27,16 @@ model User {
 }
 
 model Category {
-  id        String    @id @default(uuid())
-  name      String
-  color     String?
-  icon      String?
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expenses  Expense[]
-  budgets   Budget[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id               String           @id @default(uuid())
+  name             String
+  color            String?
+  icon             String?
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses         Expense[]
+  budgetCategories BudgetCategory[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@unique([userId, name])
   @@index([userId])
@@ -76,9 +76,13 @@ model Budget {
   month Int? // 1-12 for monthly budgets, null for yearly
   year  Int // Year for both monthly and yearly budgets
 
-  // Optional category-specific budget (null = overall budget)
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  // Budget identification
+  name String? // Optional name to distinguish multiple budgets (e.g., "Main Budget", "Extra Income")
+
+  // Many-to-many relationship with categories
+  // Empty array = overall budget (applies to all expenses)
+  // One or more categories = budget shared across those categories
+  categories BudgetCategory[]
 
   // User relationship
   userId String
@@ -96,11 +100,23 @@ model Budget {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Ensure unique budgets per user/category/period combination
-  @@unique([userId, categoryId, period, month, year])
   @@index([userId])
   @@index([userId, year, month])
-  @@index([userId, categoryId])
   @@index([groupId]) // For future group expense feature
   @@map("budgets")
+}
+
+// Junction table for many-to-many relationship between Budget and Category
+model BudgetCategory {
+  id         String   @id @default(uuid())
+  budgetId   String
+  budget     Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([budgetId, categoryId])
+  @@index([budgetId])
+  @@index([categoryId])
+  @@map("budget_categories")
 }

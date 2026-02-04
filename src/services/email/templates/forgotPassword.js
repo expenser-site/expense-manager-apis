@@ -30,7 +30,7 @@ const forgotPasswordTemplate = data => {
     
     ${createWarningBox(`This link expires in <strong>${expiryMinutes} minutes</strong>.`)}
     
-    ${createParagraph("If you didn't request this, please ignore this email.")}
+    ${createParagraph('If you didn\'t request this, please ignore this email.')}
     
     ${createParagraph('Best regards,<br>The Expenser Team')}
   `);

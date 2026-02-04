@@ -60,7 +60,18 @@ const getDashboardSummary = async (req, res) => {
           ]
         },
         include: {
-          category: true
+          categories: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                  icon: true
+                }
+              }
+            }
+          }
         }
       })
     ]);
@@ -86,51 +97,60 @@ const getDashboardSummary = async (req, res) => {
     const averageExpense = expenseCount > 0 ? (totalExpenses._sum.amount || 0) / expenseCount : 0;
     const totalSpent = totalExpenses._sum.amount || 0;
 
-    // Calculate budget vs actual comparison
+    // Calculate budget vs actual comparison with aggregation
     const budgetComparison = {
       hasBudget: budgets.length > 0,
-      overall: null,
-      categories: []
+      summary: {
+        totalBudgeted: 0,
+        totalSpent: 0,
+        totalRemaining: 0,
+        overallPercentageUsed: 0,
+        budgetCount: budgets.length
+      },
+      budgets: []
     };
 
     if (budgets.length > 0) {
-      // Find overall budget (no categoryId)
-      const overallBudget = budgets.find(b => !b.categoryId);
+      let totalBudgeted = 0;
+      let totalSpentAcrossAllBudgets = 0;
+      // Process all budgets (each budget can have multiple categories)
+      budgetComparison.budgets = budgets.map(budget => {
+        // Calculate total spent across all categories in this budget
+        let spent = 0;
+        const budgetCategories = [];
 
-      if (overallBudget) {
-        const remaining = overallBudget.amount - totalSpent;
-        const percentageUsed = overallBudget.amount > 0 ? (totalSpent / overallBudget.amount) * 100 : 0;
+        budget.categories.forEach(bc => {
+          const categorySpending = categoryBreakdown.find(
+            cb => cb.categoryId === bc.categoryId
+          );
+          const categorySpent = categorySpending ? categorySpending._sum.amount || 0 : 0;
+          spent += categorySpent;
 
-        budgetComparison.overall = {
-          budgetId: overallBudget.id,
-          budgetAmount: overallBudget.amount,
-          currency: overallBudget.currency,
-          period: overallBudget.period,
-          spent: parseFloat(totalSpent.toFixed(2)),
-          remaining: parseFloat(remaining.toFixed(2)),
-          percentageUsed: parseFloat(percentageUsed.toFixed(2)),
-          isOverBudget: remaining < 0,
-          alertStatus: percentageUsed >= 100 ? 'danger' : percentageUsed >= 80 ? 'warning' : 'normal'
-        };
-      }
+          budgetCategories.push({
+            id: bc.category.id,
+            name: bc.category.name,
+            color: bc.category.color,
+            icon: bc.category.icon,
+            spent: parseFloat(categorySpent.toFixed(2))
+          });
+        });
 
-      // Process category-specific budgets
-      const categoryBudgets = budgets.filter(b => b.categoryId);
-      budgetComparison.categories = categoryBudgets.map(budget => {
-        const categorySpending = categoryBreakdown.find(
-          cb => cb.categoryId === budget.categoryId
-        );
-        const spent = categorySpending ? categorySpending._sum.amount || 0 : 0;
         const remaining = budget.amount - spent;
         const percentageUsed = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
 
+        // Aggregate totals
+        totalBudgeted += budget.amount;
+        totalSpentAcrossAllBudgets += spent;
+
         return {
           budgetId: budget.id,
-          categoryId: budget.categoryId,
-          categoryName: budget.category?.name || 'Unknown',
+          name: budget.name || `${budget.period} budget`,
           budgetAmount: budget.amount,
           currency: budget.currency,
           period: budget.period,
+          month: budget.month,
+          year: budget.year,
+          categories: budgetCategories,
           spent: parseFloat(spent.toFixed(2)),
           remaining: parseFloat(remaining.toFixed(2)),
           percentageUsed: parseFloat(percentageUsed.toFixed(2)),
@@ -138,6 +158,14 @@ const getDashboardSummary = async (req, res) => {
           alertStatus: percentageUsed >= 100 ? 'danger' : percentageUsed >= 80 ? 'warning' : 'normal'
         };
       });
+
+      // Calculate overall summary across all budgets
+      budgetComparison.summary.totalBudgeted = parseFloat(totalBudgeted.toFixed(2));
+      budgetComparison.summary.totalSpent = parseFloat(totalSpentAcrossAllBudgets.toFixed(2));
+      budgetComparison.summary.totalRemaining = parseFloat((totalBudgeted - totalSpentAcrossAllBudgets).toFixed(2));
+      budgetComparison.summary.overallPercentageUsed = totalBudgeted > 0
+        ? parseFloat(((totalSpentAcrossAllBudgets / totalBudgeted) * 100).toFixed(2))
+        : 0;
     }
 
     res.json({
@@ -158,7 +186,7 @@ const getDashboardSummary = async (req, res) => {
       ]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'dashboard-summary' });
+    logger.logError(error, req, { context: 'dashboard-summary' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -230,7 +258,7 @@ const getCategoryAnalytics = async (req, res) => {
       ]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'category-analytics' });
+    logger.logError(error, req, { context: 'category-analytics' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -377,7 +405,7 @@ const getRecentExpenses = async (req, res) => {
       _links: [dashboardLinks.recentExpenses(), dashboardLinks.summary(), dashboardLinks.expenses()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'recent-expenses' });
+    logger.logError(error, req, { context: 'recent-expenses' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };

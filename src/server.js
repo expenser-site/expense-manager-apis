@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import session from 'express-session';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import passport from './config/passport.js';
 import emailService from './services/email/index.js';
 import healthRoutes from './routes/healthRoutes.js';
@@ -36,6 +38,67 @@ const allowedOrigins = process.env.CORS_ORIGIN
     ? ['https://app.expenser.site', 'https://expenser.site', 'https://www.expenser.site']
     : ['http://localhost:5173']; // Fallback based on environment
 
+// Security middleware - Helmet (must come early)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ['\'self\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        scriptSrc: ['\'self\''],
+        imgSrc: ['\'self\'', 'data:', 'https:'],
+        connectSrc: ['\'self\''],
+        fontSrc: ['\'self\''],
+        objectSrc: ['\'none\''],
+        mediaSrc: ['\'self\''],
+        frameSrc: ['\'none\'']
+      }
+    },
+    crossOriginEmbedderPolicy: false, // Allow embedding if needed
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+      preload: true
+    }
+  })
+);
+
+// Rate limiters
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  handler: (req, res) => {
+    logger.warn('Rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+      userId: req.userId
+    });
+    res.status(429).json({
+      error: 'Too many requests, please try again later.'
+    });
+  }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login/register attempts per windowMs
+  message: 'Too many authentication attempts, please try again later.',
+  skipSuccessfulRequests: true, // Don't count successful requests
+  handler: (req, res) => {
+    logger.warn('Auth rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+      email: req.body?.email
+    });
+    res.status(429).json({
+      error: 'Too many authentication attempts, please try again in 15 minutes.'
+    });
+  }
+});
+
 // Middleware
 app.use(
   cors({
@@ -66,7 +129,9 @@ app.use(
   })
 );
 
-app.use(express.json());
+// Request size limits (prevent payload attacks)
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Session middleware (required for passport)
 app.use(
@@ -125,12 +190,12 @@ app.use('/api/v1/budgets', (req, res, next) => {
 
 // Routes
 app.use('/api/v1/health', healthRoutes);
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/expenses', expenseRoutes);
-app.use('/api/v1/dashboard', dashboardRoutes);
-app.use('/api/v1/categories', categoryRoutes);
-app.use('/api/v1/budgets', budgetRoutes);
-app.use('/api/v1/migration', migrationRoutes);
+app.use('/api/v1/auth', authLimiter, authRoutes); // Apply strict rate limit to auth
+app.use('/api/v1/expenses', generalLimiter, expenseRoutes);
+app.use('/api/v1/dashboard', generalLimiter, dashboardRoutes);
+app.use('/api/v1/categories', generalLimiter, categoryRoutes);
+app.use('/api/v1/budgets', generalLimiter, budgetRoutes);
+app.use('/api/v1/migration', generalLimiter, migrationRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -154,9 +219,52 @@ app.use((err, req, res, _next) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info('Server started successfully', {
     port: PORT,
     nodeEnv: process.env.NODE_ENV || 'development'
   });
+});
+
+// Graceful shutdown handlers
+const gracefulShutdown = (signal) => {
+  logger.info(`${signal} signal received: closing HTTP server`);
+
+  server.close(() => {
+    logger.info('HTTP server closed');
+
+    // Close database connections
+    import('./config/database.js').then(({ prisma }) => {
+      prisma.$disconnect()
+        .then(() => {
+          logger.info('Database connection closed');
+          process.exit(0);
+        })
+        .catch((err) => {
+          logger.logError(err, null, { context: 'database-disconnect' });
+          process.exit(1);
+        });
+    });
+  });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    logger.error('Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 30000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.logError(error, null, { context: 'uncaught-exception' });
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', { promise, reason });
+  gracefulShutdown('UNHANDLED_REJECTION');
 });
