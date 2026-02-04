@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
+import budgetRoutes from './routes/budgetRoutes.js';
 import migrationRoutes from './routes/migrationRoutes.js';
 import { requestLogger, errorLogger } from './middleware/logging.js';
 import { conditionalCache } from './middleware/etag.js';
@@ -114,12 +115,21 @@ app.use('/api/v1/dashboard', (req, res, next) => {
   }
 });
 
+app.use('/api/v1/budgets', (req, res, next) => {
+  if (req.method === 'GET') {
+    conditionalCache(req, res, next);
+  } else {
+    next();
+  }
+});
+
 // Routes
 app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/expenses', expenseRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/categories', categoryRoutes);
+app.use('/api/v1/budgets', budgetRoutes);
 app.use('/api/v1/migration', migrationRoutes);
 
 // 404 handler

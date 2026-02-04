@@ -8,6 +8,8 @@ const getDashboardSummary = async (req, res) => {
 
     // Build date filter - include entire end date
     let dateFilter = {};
+    let budgetYear, budgetMonth;
+
     if (startDate && endDate) {
       const endDateTime = new Date(endDate);
       endDateTime.setHours(23, 59, 59, 999);
@@ -17,6 +19,16 @@ const getDashboardSummary = async (req, res) => {
           lte: endDateTime
         }
       };
+
+      // Extract year and month from date filter for budget lookup
+      const filterStartDate = new Date(startDate);
+      budgetYear = filterStartDate.getFullYear();
+      budgetMonth = filterStartDate.getMonth() + 1;
+    } else {
+      // Use current year and month if no date filter
+      const now = new Date();
+      budgetYear = now.getFullYear();
+      budgetMonth = now.getMonth() + 1;
     }
 
     const where = {
@@ -25,7 +37,7 @@ const getDashboardSummary = async (req, res) => {
     };
 
     // Use aggregation instead of loading all records
-    const [totalExpenses, expenseCount, categoryBreakdown] = await Promise.all([
+    const [totalExpenses, expenseCount, categoryBreakdown, budgets] = await Promise.all([
       prisma.expense.aggregate({
         where,
         _sum: { amount: true }
@@ -36,6 +48,20 @@ const getDashboardSummary = async (req, res) => {
         by: ['categoryId'],
         where,
         _sum: { amount: true }
+      }),
+      // Get relevant budgets (overall and category-specific)
+      prisma.budget.findMany({
+        where: {
+          userId: req.userId,
+          year: budgetYear,
+          OR: [
+            { period: 'monthly', month: budgetMonth },
+            { period: 'yearly' }
+          ]
+        },
+        include: {
+          category: true
+        }
       })
     ]);
 
@@ -58,14 +84,70 @@ const getDashboardSummary = async (req, res) => {
     }, {});
 
     const averageExpense = expenseCount > 0 ? (totalExpenses._sum.amount || 0) / expenseCount : 0;
+    const totalSpent = totalExpenses._sum.amount || 0;
+
+    // Calculate budget vs actual comparison
+    const budgetComparison = {
+      hasBudget: budgets.length > 0,
+      overall: null,
+      categories: []
+    };
+
+    if (budgets.length > 0) {
+      // Find overall budget (no categoryId)
+      const overallBudget = budgets.find(b => !b.categoryId);
+
+      if (overallBudget) {
+        const remaining = overallBudget.amount - totalSpent;
+        const percentageUsed = overallBudget.amount > 0 ? (totalSpent / overallBudget.amount) * 100 : 0;
+
+        budgetComparison.overall = {
+          budgetId: overallBudget.id,
+          budgetAmount: overallBudget.amount,
+          currency: overallBudget.currency,
+          period: overallBudget.period,
+          spent: parseFloat(totalSpent.toFixed(2)),
+          remaining: parseFloat(remaining.toFixed(2)),
+          percentageUsed: parseFloat(percentageUsed.toFixed(2)),
+          isOverBudget: remaining < 0,
+          alertStatus: percentageUsed >= 100 ? 'danger' : percentageUsed >= 80 ? 'warning' : 'normal'
+        };
+      }
+
+      // Process category-specific budgets
+      const categoryBudgets = budgets.filter(b => b.categoryId);
+      budgetComparison.categories = categoryBudgets.map(budget => {
+        const categorySpending = categoryBreakdown.find(
+          cb => cb.categoryId === budget.categoryId
+        );
+        const spent = categorySpending ? categorySpending._sum.amount || 0 : 0;
+        const remaining = budget.amount - spent;
+        const percentageUsed = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+
+        return {
+          budgetId: budget.id,
+          categoryId: budget.categoryId,
+          categoryName: budget.category?.name || 'Unknown',
+          budgetAmount: budget.amount,
+          currency: budget.currency,
+          period: budget.period,
+          spent: parseFloat(spent.toFixed(2)),
+          remaining: parseFloat(remaining.toFixed(2)),
+          percentageUsed: parseFloat(percentageUsed.toFixed(2)),
+          isOverBudget: remaining < 0,
+          alertStatus: percentageUsed >= 100 ? 'danger' : percentageUsed >= 80 ? 'warning' : 'normal'
+        };
+      });
+    }
 
     res.json({
       summary: {
-        totalAmount: totalExpenses._sum.amount || 0,
+        totalAmount: totalSpent,
         totalCount: expenseCount,
         averageExpense: parseFloat(averageExpense.toFixed(2)),
         categoryBreakdown: categoryBreakdownByName
       },
+      budgetComparison,
       _links: [
         dashboardLinks.summary(),
         dashboardLinks.categoryAnalytics(),

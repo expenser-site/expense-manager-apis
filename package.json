@@ -23,6 +23,7 @@
     "test:auth": "node tests/test-auth-flow.js",
     "test:categories": "node tests/test-category-flow.js",
     "test:expenses": "node tests/test-expense-flow.js",
+    "test:budgets": "node tests/test-budget-flow.js",
     "test:email": "node tests/test-email-service.js"
   },
   "prisma": {
