@@ -15,7 +15,7 @@ services:
     networks:
       - expense-manager-network-development
     ports:
-      - "5432:5432"
+      - "5433:5432"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -37,7 +37,7 @@ services:
     environment:
       # Application Settings
       NODE_ENV: development
-      PORT: 3000
+      PORT: 3001
       # Database Configuration
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -47,7 +47,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       # CORS Configuration
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5174}
       # Development-specific: File watching (required for Docker volumes on macOS/Windows)
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
@@ -63,9 +63,9 @@ services:
     networks:
       - expense-manager-network-development
     ports:
-      - "3000:3000"
+      - "3001:3001"
       # Debug port for VS Code debugging
-      - "9229:9229"
+      - "9230:9229"
     depends_on:
       postgres:
         condition: service_healthy
@@ -76,7 +76,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "require('http').get('http://localhost:3000/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+          "require('http').get('http://localhost:3001/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
         ]
       interval: 30s
       timeout: 10s
@@ -89,7 +89,7 @@ volumes:
     driver: local
     name: expense-manager-postgres-volume-development
   expense-manager-api-node-modules-development:
-    driver: local
+    external: true
     name: expense-manager-api-node-modules-development
 
 # Networks

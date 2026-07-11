@@ -51,7 +51,7 @@ const createCategory = async (req, res) => {
       _links: [categoryLinks.self(category.id), categoryLinks.collection()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'create-category' });
+    logger.logError(error, req, { context: 'create-category' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -70,10 +70,10 @@ const getCategories = async (req, res) => {
     // Sanitize search parameter
     const sanitizedSearch = search
       ? search
-          .toString()
-          .trim()
-          .substring(0, 100)
-          .replace(/[;'"\\]/g, '')
+        .toString()
+        .trim()
+        .substring(0, 100)
+        .replace(/[;'"\\]/g, '')
       : '';
 
     // Build where clause
@@ -204,7 +204,7 @@ const getCategories = async (req, res) => {
       })
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'get-categories' });
+    logger.logError(error, req, { context: 'get-categories' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -233,7 +233,7 @@ const getCategoryById = async (req, res) => {
       category: addCategoryLinks(category)
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'get-category-by-id' });
+    logger.logError(error, req, { context: 'get-category-by-id' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -302,7 +302,7 @@ const updateCategory = async (req, res) => {
       category: addCategoryLinks(category)
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'update-category' });
+    logger.logError(error, req, { context: 'update-category' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };

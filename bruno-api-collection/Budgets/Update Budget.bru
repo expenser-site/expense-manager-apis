@@ -1,0 +1,55 @@
+meta {
+  name: Update Budget
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/v1/budgets/97ab15ef-ae1a-4882-8358-a5ae76c2edc6
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "amount": 2000.00,
+    "notes": "Updated monthly grocery budget - increased for special events",
+    "alertAt80": true,
+    "alertAt100": true
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has updated budget object", function() {
+    expect(res.body.budget).to.be.an('object');
+  });
+  
+  test("Budget amount is updated", function() {
+    expect(res.body.budget.amount).to.equal(2000);
+  });
+  
+  test("Budget notes are updated", function() {
+    expect(res.body.budget.notes).to.include('Updated');
+  });
+  
+  test("updatedAt is more recent than createdAt", function() {
+    const budget = res.body.budget;
+    const created = new Date(budget.createdAt);
+    const updated = new Date(budget.updatedAt);
+    expect(updated.getTime()).to.be.greaterThanOrEqual(created.getTime());
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('object');
+    expect(res.body._links).to.have.property('self');
+    expect(res.body._links).to.have.property('delete');
+  });
+}

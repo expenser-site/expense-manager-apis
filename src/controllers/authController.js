@@ -116,7 +116,7 @@ const register = async (req, res) => {
       _links: [userLinks.self(), userLinks.dashboard()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'user-registration' });
+    logger.logError(error, req, { context: 'user-registration' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -164,7 +164,7 @@ const login = async (req, res) => {
       _links: [userLinks.self(), userLinks.dashboard()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'user-login' });
+    logger.logError(error, req, { context: 'user-login' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -189,7 +189,7 @@ const getProfile = async (req, res) => {
 
     res.json(addUserLinks(user));
   } catch (error) {
-    logger.logError(error, null, { context: 'get-user-profile' });
+    logger.logError(error, req, { context: 'get-user-profile' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -251,7 +251,7 @@ const updateProfile = async (req, res) => {
       user: addUserLinks(user)
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'update-user-profile' });
+    logger.logError(error, req, { context: 'update-user-profile' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -319,7 +319,7 @@ const changePassword = async (req, res) => {
 
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
-    logger.logError(error, null, { context: 'change-password' });
+    logger.logError(error, req, { context: 'change-password' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -372,7 +372,7 @@ const deleteAccount = async (req, res) => {
 
     res.json({ message: 'Account deleted successfully' });
   } catch (error) {
-    logger.logError(error, null, { context: 'delete-account' });
+    logger.logError(error, req, { context: 'delete-account' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -463,7 +463,7 @@ const forgotPassword = async (req, res) => {
       resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'forgot-password' });
+    logger.logError(error, req, { context: 'forgot-password' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -525,7 +525,7 @@ const resetPassword = async (req, res) => {
 
     res.json({ message: 'Password reset successful' });
   } catch (error) {
-    logger.logError(error, null, { context: 'reset-password' });
+    logger.logError(error, req, { context: 'reset-password' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -547,7 +547,7 @@ const googleCallback = async (req, res) => {
 
     res.redirect(redirectUrl);
   } catch (error) {
-    logger.logError(error, null, { context: 'google-oauth-callback' });
+    logger.logError(error, req, { context: 'google-oauth-callback' });
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
   }

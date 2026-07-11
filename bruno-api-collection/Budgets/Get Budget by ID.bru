@@ -1,0 +1,54 @@
+meta {
+  name: Get Budget by ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/budgets/97ab15ef-ae1a-4882-8358-a5ae76c2edc6
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has budget object", function() {
+    expect(res.body.budget).to.be.an('object');
+  });
+  
+  test("Budget has required fields", function() {
+    const budget = res.body.budget;
+    expect(budget).to.have.property('id');
+    expect(budget).to.have.property('amount');
+    expect(budget).to.have.property('currency');
+    expect(budget).to.have.property('period');
+    expect(budget).to.have.property('year');
+    expect(budget).to.have.property('userId');
+    expect(budget).to.have.property('createdAt');
+    expect(budget).to.have.property('updatedAt');
+  });
+  
+  test("Budget has category if category-specific", function() {
+    const budget = res.body.budget;
+    if (budget.categoryId) {
+      expect(budget).to.have.property('category');
+      expect(budget.category).to.be.an('object');
+      expect(budget.category).to.have.property('name');
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('object');
+    expect(res.body._links).to.have.property('self');
+    expect(res.body._links).to.have.property('update');
+    expect(res.body._links).to.have.property('delete');
+    expect(res.body._links).to.have.property('status');
+  });
+}

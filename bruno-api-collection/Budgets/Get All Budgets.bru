@@ -1,0 +1,59 @@
+meta {
+  name: Get All Budgets
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/budgets?page=1&limit=50&period=monthly&year=2026
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  limit: 50
+  period: monthly
+  year: 2026
+  ~month: 2
+  ~categoryId: {{categoryId}}
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has budgets array", function() {
+    expect(res.body.budgets).to.be.an('array');
+  });
+  
+  test("Response has pagination object", function() {
+    expect(res.body.pagination).to.be.an('object');
+    expect(res.body.pagination).to.have.property('total');
+    expect(res.body.pagination).to.have.property('page');
+    expect(res.body.pagination).to.have.property('limit');
+    expect(res.body.pagination).to.have.property('pages');
+  });
+  
+  test("Budgets have required fields", function() {
+    if (res.body.budgets.length > 0) {
+      const budget = res.body.budgets[0];
+      expect(budget).to.have.property('id');
+      expect(budget).to.have.property('amount');
+      expect(budget).to.have.property('currency');
+      expect(budget).to.have.property('period');
+      expect(budget).to.have.property('year');
+      expect(budget).to.have.property('userId');
+    }
+  });
+  
+  test("Response has HATEOAS links", function() {
+    expect(res.body._links).to.be.an('object');
+    expect(res.body._links).to.have.property('self');
+  });
+}

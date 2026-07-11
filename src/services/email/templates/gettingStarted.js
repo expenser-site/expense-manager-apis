@@ -22,9 +22,9 @@ const gettingStartedTemplate = data => {
   const content = createContent(`
     ${createParagraph(`Hello <strong>${name}</strong>,`)}
     
-    ${createSuccessBox("Welcome to Expenser! Let's get you started.")}
+    ${createSuccessBox('Welcome to Expenser! Let\'s get you started.')}
     
-    ${createParagraph("Here's how to make the most of Expenser:")}
+    ${createParagraph('Here\'s how to make the most of Expenser:')}
     
     ${createList([
       '<strong>Add expenses</strong> - Track your spending as it happens',

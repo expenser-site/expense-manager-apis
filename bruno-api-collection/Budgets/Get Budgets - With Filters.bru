@@ -1,0 +1,46 @@
+meta {
+  name: Get Budgets - With Filters
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/v1/budgets?year=2026&month=2&page=1&limit=20&period=monthly
+  body: none
+  auth: bearer
+}
+
+params:query {
+  year: 2026
+  month: 2
+  page: 1
+  limit: 20
+  period: monthly
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("All budgets match the filters", function() {
+    res.body.budgets.forEach(budget => {
+      expect(budget.period).to.equal('monthly');
+      expect(budget.year).to.equal(2026);
+      expect(budget.month).to.equal(2);
+    });
+  });
+  
+  test("Pagination limit is respected", function() {
+    expect(res.body.budgets.length).to.be.lessThanOrEqual(20);
+  });
+  
+  test("Response has pagination with correct page", function() {
+    expect(res.body.pagination.page).to.equal(1);
+    expect(res.body.pagination.limit).to.equal(20);
+  });
+}

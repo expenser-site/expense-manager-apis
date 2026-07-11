@@ -1,0 +1,81 @@
+meta {
+  name: Get Budget Status
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/budgets/status
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~year: 2026
+  ~month: 2
+  ~categoryId: {{categoryId}}
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has year and month", function() {
+    expect(res.body).to.have.property('year');
+    expect(res.body).to.have.property('month');
+  });
+  
+  test("Response has budgetStatus array", function() {
+    expect(res.body.budgetStatus).to.be.an('array');
+  });
+  
+  test("Budget status has required fields", function() {
+    if (res.body.budgetStatus.length > 0) {
+      const status = res.body.budgetStatus[0];
+      expect(status).to.have.property('budgetId');
+      expect(status).to.have.property('budgetAmount');
+      expect(status).to.have.property('currency');
+      expect(status).to.have.property('spent');
+      expect(status).to.have.property('remaining');
+      expect(status).to.have.property('percentageUsed');
+      expect(status).to.have.property('isOverBudget');
+      expect(status).to.have.property('alerts');
+    }
+  });
+  
+  test("Percentage calculations are correct", function() {
+    if (res.body.budgetStatus.length > 0) {
+      const status = res.body.budgetStatus[0];
+      const calculatedPercentage = (status.spent / status.budgetAmount) * 100;
+      expect(Math.abs(status.percentageUsed - calculatedPercentage)).to.be.lessThan(0.1);
+    }
+  });
+  
+  test("isOverBudget flag is correct", function() {
+    if (res.body.budgetStatus.length > 0) {
+      const status = res.body.budgetStatus[0];
+      if (status.remaining < 0) {
+        expect(status.isOverBudget).to.equal(true);
+      } else {
+        expect(status.isOverBudget).to.equal(false);
+      }
+    }
+  });
+  
+  test("Response has overall summary if available", function() {
+    if (res.body.overallSummary) {
+      expect(res.body.overallSummary).to.have.property('totalBudget');
+      expect(res.body.overallSummary).to.have.property('totalSpent');
+      expect(res.body.overallSummary).to.have.property('totalRemaining');
+    }
+  });
+  
+  test("Response has category breakdown array", function() {
+    expect(res.body.categoryBreakdown).to.be.an('array');
+  });
+}

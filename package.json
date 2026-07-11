@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "postinstall": "prisma generate",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"src/**/*.js\" \"*.md\" \"*.json\"",
@@ -23,6 +24,7 @@
     "test:auth": "node tests/test-auth-flow.js",
     "test:categories": "node tests/test-category-flow.js",
     "test:expenses": "node tests/test-expense-flow.js",
+    "test:budgets": "node tests/test-budget-flow.js",
     "test:email": "node tests/test-email-service.js"
   },
   "prisma": {
@@ -60,8 +62,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.2",
     "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "nodemailer": "^7.0.12",

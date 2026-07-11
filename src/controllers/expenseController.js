@@ -1,6 +1,7 @@
 import { validationResult } from 'express-validator';
 import prisma from '../config/database.js';
 import logger from '../config/logger.js';
+import budgetAlertService from '../services/budgetAlertService.js';
 import { getOrCreateNoCategory } from '../utils/defaultCategories.js';
 import { addExpenseLinks, addCollectionLinks, expenseLinks } from '../utils/hateoas.js';
 
@@ -93,13 +94,46 @@ const createExpense = async (req, res) => {
       }
     });
 
+    // FEATURE: Trigger budget alert check asynchronously
+    // This checks if any budgets are affected by this new expense
+    setImmediate(async () => {
+      try {
+        const expenseYear = expenseDate.getFullYear();
+        const expenseMonth = expenseDate.getMonth() + 1;
+
+        // Find budgets that might be affected by this expense
+        const affectedBudgets = await prisma.budget.findMany({
+          where: {
+            userId: req.userId,
+            year: expenseYear,
+            OR: [
+              // Monthly budget for this month
+              { period: 'monthly', month: expenseMonth },
+              // Yearly budget
+              { period: 'yearly' },
+              // Budgets with this category
+              { categories: { some: { categoryId: finalCategoryId } } }
+            ]
+          }
+        });
+
+        // Check each affected budget
+        for (const budget of affectedBudgets) {
+          const { spentAmount, spentPercent } = await budgetAlertService.calculateBudgetSpending(budget);
+          await budgetAlertService.checkAndSendAlerts(budget.id, spentAmount, spentPercent);
+        }
+      } catch (error) {
+        logger.logError(error, req, { context: 'expense-budget-alert-check' });
+      }
+    });
+
     res.status(201).json({
       message: 'Expense created successfully',
       expense: addExpenseLinks(expense),
       _links: [expenseLinks.self(expense.id), expenseLinks.collection()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'create-expense' });
+    logger.logError(error, req, { context: 'create-expense' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -209,7 +243,7 @@ const getExpenses = async (req, res) => {
       })
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'get-expenses' });
+    logger.logError(error, req, { context: 'get-expenses' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -236,7 +270,7 @@ const getExpenseById = async (req, res) => {
       expense: addExpenseLinks(expense)
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'get-expense-by-id' });
+    logger.logError(error, req, { context: 'get-expense-by-id' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -344,12 +378,41 @@ const updateExpense = async (req, res) => {
       }
     });
 
+    // FEATURE: Trigger budget alert check asynchronously
+    // Check budgets affected by the updated expense
+    setImmediate(async () => {
+      try {
+        const expenseYear = expense.date.getFullYear();
+        const expenseMonth = expense.date.getMonth() + 1;
+
+        // Find budgets that might be affected
+        const affectedBudgets = await prisma.budget.findMany({
+          where: {
+            userId: req.userId,
+            year: expenseYear,
+            OR: [
+              { period: 'monthly', month: expenseMonth },
+              { period: 'yearly' },
+              { categories: { some: { categoryId: expense.categoryId } } }
+            ]
+          }
+        });
+
+        for (const budget of affectedBudgets) {
+          const { spentAmount, spentPercent } = await budgetAlertService.calculateBudgetSpending(budget);
+          await budgetAlertService.checkAndSendAlerts(budget.id, spentAmount, spentPercent);
+        }
+      } catch (error) {
+        logger.logError(error, req, { context: 'expense-update-budget-alert-check' });
+      }
+    });
+
     res.json({
       message: 'Expense updated successfully',
       expense: addExpenseLinks(expense)
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'update-expense' });
+    logger.logError(error, req, { context: 'update-expense' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -369,8 +432,38 @@ const deleteExpense = async (req, res) => {
       return res.status(404).json({ error: 'Expense not found' });
     }
 
+    // Store expense details before deletion for budget alert check
+    const expenseYear = existingExpense.date.getFullYear();
+    const expenseMonth = existingExpense.date.getMonth() + 1;
+    const categoryId = existingExpense.categoryId;
+
     await prisma.expense.delete({
       where: { id }
+    });
+
+    // FEATURE: Trigger budget alert check asynchronously
+    // Check if deletion brings spending back below thresholds
+    setImmediate(async () => {
+      try {
+        const affectedBudgets = await prisma.budget.findMany({
+          where: {
+            userId: req.userId,
+            year: expenseYear,
+            OR: [
+              { period: 'monthly', month: expenseMonth },
+              { period: 'yearly' },
+              { categories: { some: { categoryId } } }
+            ]
+          }
+        });
+
+        for (const budget of affectedBudgets) {
+          const { spentAmount, spentPercent } = await budgetAlertService.calculateBudgetSpending(budget);
+          await budgetAlertService.checkAndSendAlerts(budget.id, spentAmount, spentPercent);
+        }
+      } catch (error) {
+        logger.logError(error, req, { context: 'expense-delete-budget-alert-check' });
+      }
     });
 
     res.json({
@@ -378,7 +471,7 @@ const deleteExpense = async (req, res) => {
       _links: [expenseLinks.collection(), expenseLinks.create()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'delete-expense' });
+    logger.logError(error, req, { context: 'delete-expense' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -417,7 +510,7 @@ const bulkDeleteExpenses = async (req, res) => {
       requestedCount: expenseIds.length
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'bulk-delete-expenses' });
+    logger.logError(error, req, { context: 'bulk-delete-expenses' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };

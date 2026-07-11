@@ -6,7 +6,7 @@
 
 ```bash
 # Make sure BASE_URL is set in .env
-echo "BASE_URL=http://localhost:3000" >> .env
+echo "BASE_URL=http://localhost:3001" >> .env
 ```
 
 ### 2. Start the Server
@@ -21,7 +21,7 @@ pnpm run dev  # Start development server
 
 ```bash
 # Get expenses with links
-curl http://localhost:3000/api/v1/expenses | jq '._links'
+curl http://localhost:3001/api/v1/expenses | jq '._links'
 
 # Expected output:
 # [
@@ -39,11 +39,11 @@ curl http://localhost:3000/api/v1/expenses | jq '._links'
 
 ```bash
 # Check compression
-curl -i http://localhost:3000/api/v1/expenses | grep "Content-Encoding"
+curl -i http://localhost:3001/api/v1/expenses | grep "Content-Encoding"
 # Expected: Content-Encoding: gzip
 
 # Check health endpoint
-curl http://localhost:3000/api/health/detailed | jq '.services.hateoas'
+curl http://localhost:3001/api/health/detailed | jq '.services.hateoas'
 # Expected: { "status": "healthy", "cacheSize": 15, ... }
 ```
 
@@ -195,20 +195,20 @@ function ExpenseList() {
 
 ```bash
 # Get all expenses with links
-curl http://localhost:3000/api/v1/expenses | jq '._links'
+curl http://localhost:3001/api/v1/expenses | jq '._links'
 
 # Get single expense
-curl http://localhost:3000/api/v1/expenses/123 | jq
+curl http://localhost:3001/api/v1/expenses/123 | jq
 
 # Update expense (follow update link)
-UPDATE_HREF=$(curl -s http://localhost:3000/api/v1/expenses/123 | jq -r '._links[] | select(.rel=="update") | .href')
-curl -X PUT "http://localhost:3000$UPDATE_HREF" \
+UPDATE_HREF=$(curl -s http://localhost:3001/api/v1/expenses/123 | jq -r '._links[] | select(.rel=="update") | .href')
+curl -X PUT "http://localhost:3001$UPDATE_HREF" \
   -H "Content-Type: application/json" \
   -d '{"amount": 150}'
 
 # Test ETag caching
-ETAG=$(curl -si http://localhost:3000/api/v1/expenses | grep -i etag | cut -d' ' -f2 | tr -d '\r')
-curl -i -H "If-None-Match: $ETAG" http://localhost:3000/api/v1/expenses
+ETAG=$(curl -si http://localhost:3001/api/v1/expenses | grep -i etag | cut -d' ' -f2 | tr -d '\r')
+curl -i -H "If-None-Match: $ETAG" http://localhost:3001/api/v1/expenses
 # Expected: HTTP/1.1 304 Not Modified
 ```
 
@@ -222,7 +222,7 @@ curl -i -H "If-None-Match: $ETAG" http://localhost:3000/api/v1/expenses
 
 ```bash
 # Verify compression
-curl -i http://localhost:3000/api/v1/expenses | grep "Content-Encoding"
+curl -i http://localhost:3001/api/v1/expenses | grep "Content-Encoding"
 ```
 
 **Opt-out:** Add header `x-no-compression` to disable for specific requests.
@@ -263,7 +263,7 @@ async function fetchWithETag(url) {
 Monitor cache:
 
 ```bash
-curl http://localhost:3000/api/health/detailed | jq '.services.hateoas.cacheSize'
+curl http://localhost:3001/api/health/detailed | jq '.services.hateoas.cacheSize'
 # Expected: 15
 ```
 
@@ -328,7 +328,7 @@ function ExpenseCard({ expense }) {
 
 ```bash
 # Get detailed health status
-curl http://localhost:3000/api/health/detailed | jq
+curl http://localhost:3001/api/health/detailed | jq
 
 # Expected output includes:
 # {
@@ -336,7 +336,7 @@ curl http://localhost:3000/api/health/detailed | jq
 #     "hateoas": {
 #       "status": "healthy",
 #       "message": "HATEOAS link generation functional",
-#       "baseUrl": "http://localhost:3000",
+#       "baseUrl": "http://localhost:3001",
 #       "cacheSize": 15,
 #       "cacheEnabled": true
 #     }
@@ -357,7 +357,7 @@ BASE_URL=https://api.your-domain.com
 
 ```bash
 # Check if client supports compression
-curl -H "Accept-Encoding: gzip" http://localhost:3000/api/v1/expenses
+curl -H "Accept-Encoding: gzip" http://localhost:3001/api/v1/expenses
 
 # Verify response header
 Content-Encoding: gzip
@@ -367,7 +367,7 @@ Content-Encoding: gzip
 
 ```bash
 # Make sure you're using GET request
-curl -X GET http://localhost:3000/api/v1/expenses
+curl -X GET http://localhost:3001/api/v1/expenses
 
 # ETag only applies to GET requests on specific routes
 ```
@@ -419,14 +419,14 @@ curl -X GET http://localhost:3000/api/v1/expenses
 
 ```bash
 # 1. Get all expenses
-curl http://localhost:3000/api/v1/expenses | jq '._links'
+curl http://localhost:3001/api/v1/expenses | jq '._links'
 
 # 2. Verify compression
-curl -i http://localhost:3000/api/v1/expenses | grep "Content-Encoding"
+curl -i http://localhost:3001/api/v1/expenses | grep "Content-Encoding"
 
 # 3. Test ETag
-ETAG=$(curl -si http://localhost:3000/api/v1/expenses | grep -i etag | cut -d' ' -f2 | tr -d '\r')
-curl -i -H "If-None-Match: $ETAG" http://localhost:3000/api/v1/expenses
+ETAG=$(curl -si http://localhost:3001/api/v1/expenses | grep -i etag | cut -d' ' -f2 | tr -d '\r')
+curl -i -H "If-None-Match: $ETAG" http://localhost:3001/api/v1/expenses
 
 # 4. Check health
 curl http://localhost:3000/api/health/detailed | jq '.services.hateoas'

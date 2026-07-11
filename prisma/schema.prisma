@@ -21,20 +21,22 @@ model User {
   updatedAt            DateTime   @updatedAt
   expenses             Expense[]
   categories           Category[]
+  budgets              Budget[]
 
   @@map("users")
 }
 
 model Category {
-  id        String    @id @default(uuid())
-  name      String
-  color     String?
-  icon      String?
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expenses  Expense[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id               String           @id @default(uuid())
+  name             String
+  color            String?
+  icon             String?
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses         Expense[]
+  budgetCategories BudgetCategory[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@unique([userId, name])
   @@index([userId])
@@ -62,4 +64,77 @@ model Expense {
   @@index([userId, categoryId]) // Critical for category filtering
   @@index([userId, categoryId, date(sort: Desc)]) // Critical for combined filters
   @@map("expenses")
+}
+
+model Budget {
+  id       String @id @default(uuid())
+  amount   Float // Budget amount
+  currency String @default("USD")
+  period   String // 'monthly' or 'yearly'
+
+  // Period tracking
+  month Int? // 1-12 for monthly budgets, null for yearly
+  year  Int // Year for both monthly and yearly budgets
+
+  // Budget identification
+  name String? // Optional name to distinguish multiple budgets (e.g., "Main Budget", "Extra Income")
+
+  // Many-to-many relationship with categories
+  // Empty array = overall budget (applies to all expenses)
+  // One or more categories = budget shared across those categories
+  categories BudgetCategory[]
+
+  // User relationship
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Alert thresholds
+  alertAt80  Boolean @default(true) // Alert when 80% spent
+  alertAt100 Boolean @default(true) // Alert when 100% spent
+
+  // Alert tracking
+  alerts BudgetAlert[]
+
+  // Future-proofing fields
+  groupId     String? // For future family/group sharing feature
+  isRecurring Boolean @default(false) // For future recurring budgets
+  notes       String? // Optional notes about the budget
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, year, month])
+  @@index([groupId]) // For future group expense feature
+  @@map("budgets")
+}
+
+// Junction table for many-to-many relationship between Budget and Category
+model BudgetCategory {
+  id         String   @id @default(uuid())
+  budgetId   String
+  budget     Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([budgetId, categoryId])
+  @@index([budgetId])
+  @@index([categoryId])
+  @@map("budget_categories")
+}
+
+// Budget alert tracking - prevents duplicate alerts
+model BudgetAlert {
+  id           String   @id @default(uuid())
+  budgetId     String
+  budget       Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  threshold    Int // 80 or 100 (percentage)
+  sentAt       DateTime @default(now())
+  spentAmount  Float // Amount spent when alert was triggered
+  spentPercent Float // Percentage spent when alert was triggered
+
+  @@unique([budgetId, threshold]) // Prevent duplicate alerts for same threshold
+  @@index([budgetId])
+  @@map("budget_alerts")
 }

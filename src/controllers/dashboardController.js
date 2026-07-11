@@ -8,6 +8,8 @@ const getDashboardSummary = async (req, res) => {
 
     // Build date filter - include entire end date
     let dateFilter = {};
+    let budgetYear, budgetMonth;
+
     if (startDate && endDate) {
       const endDateTime = new Date(endDate);
       endDateTime.setHours(23, 59, 59, 999);
@@ -17,6 +19,16 @@ const getDashboardSummary = async (req, res) => {
           lte: endDateTime
         }
       };
+
+      // Extract year and month from date filter for budget lookup
+      const filterStartDate = new Date(startDate);
+      budgetYear = filterStartDate.getFullYear();
+      budgetMonth = filterStartDate.getMonth() + 1;
+    } else {
+      // Use current year and month if no date filter
+      const now = new Date();
+      budgetYear = now.getFullYear();
+      budgetMonth = now.getMonth() + 1;
     }
 
     const where = {
@@ -25,7 +37,7 @@ const getDashboardSummary = async (req, res) => {
     };
 
     // Use aggregation instead of loading all records
-    const [totalExpenses, expenseCount, categoryBreakdown] = await Promise.all([
+    const [totalExpenses, expenseCount, categoryBreakdown, budgets] = await Promise.all([
       prisma.expense.aggregate({
         where,
         _sum: { amount: true }
@@ -36,6 +48,31 @@ const getDashboardSummary = async (req, res) => {
         by: ['categoryId'],
         where,
         _sum: { amount: true }
+      }),
+      // Get relevant budgets (overall and category-specific)
+      prisma.budget.findMany({
+        where: {
+          userId: req.userId,
+          year: budgetYear,
+          OR: [
+            { period: 'monthly', month: budgetMonth },
+            { period: 'yearly' }
+          ]
+        },
+        include: {
+          categories: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                  icon: true
+                }
+              }
+            }
+          }
+        }
       })
     ]);
 
@@ -58,14 +95,87 @@ const getDashboardSummary = async (req, res) => {
     }, {});
 
     const averageExpense = expenseCount > 0 ? (totalExpenses._sum.amount || 0) / expenseCount : 0;
+    const totalSpent = totalExpenses._sum.amount || 0;
+
+    // Calculate budget vs actual comparison with aggregation
+    const budgetComparison = {
+      hasBudget: budgets.length > 0,
+      summary: {
+        totalBudgeted: 0,
+        totalSpent: 0,
+        totalRemaining: 0,
+        overallPercentageUsed: 0,
+        budgetCount: budgets.length
+      },
+      budgets: []
+    };
+
+    if (budgets.length > 0) {
+      let totalBudgeted = 0;
+      let totalSpentAcrossAllBudgets = 0;
+      // Process all budgets (each budget can have multiple categories)
+      budgetComparison.budgets = budgets.map(budget => {
+        // Calculate total spent across all categories in this budget
+        let spent = 0;
+        const budgetCategories = [];
+
+        budget.categories.forEach(bc => {
+          const categorySpending = categoryBreakdown.find(
+            cb => cb.categoryId === bc.categoryId
+          );
+          const categorySpent = categorySpending ? categorySpending._sum.amount || 0 : 0;
+          spent += categorySpent;
+
+          budgetCategories.push({
+            id: bc.category.id,
+            name: bc.category.name,
+            color: bc.category.color,
+            icon: bc.category.icon,
+            spent: parseFloat(categorySpent.toFixed(2))
+          });
+        });
+
+        const remaining = budget.amount - spent;
+        const percentageUsed = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+
+        // Aggregate totals
+        totalBudgeted += budget.amount;
+        totalSpentAcrossAllBudgets += spent;
+
+        return {
+          budgetId: budget.id,
+          name: budget.name || `${budget.period} budget`,
+          budgetAmount: budget.amount,
+          currency: budget.currency,
+          period: budget.period,
+          month: budget.month,
+          year: budget.year,
+          categories: budgetCategories,
+          spent: parseFloat(spent.toFixed(2)),
+          remaining: parseFloat(remaining.toFixed(2)),
+          percentageUsed: parseFloat(percentageUsed.toFixed(2)),
+          isOverBudget: remaining < 0,
+          alertStatus: percentageUsed >= 100 ? 'danger' : percentageUsed >= 80 ? 'warning' : 'normal'
+        };
+      });
+
+      // Calculate overall summary across all budgets
+      budgetComparison.summary.totalBudgeted = parseFloat(totalBudgeted.toFixed(2));
+      budgetComparison.summary.totalSpent = parseFloat(totalSpentAcrossAllBudgets.toFixed(2));
+      budgetComparison.summary.totalRemaining = parseFloat((totalBudgeted - totalSpentAcrossAllBudgets).toFixed(2));
+      budgetComparison.summary.overallPercentageUsed = totalBudgeted > 0
+        ? parseFloat(((totalSpentAcrossAllBudgets / totalBudgeted) * 100).toFixed(2))
+        : 0;
+    }
 
     res.json({
       summary: {
-        totalAmount: totalExpenses._sum.amount || 0,
+        totalAmount: totalSpent,
         totalCount: expenseCount,
         averageExpense: parseFloat(averageExpense.toFixed(2)),
         categoryBreakdown: categoryBreakdownByName
       },
+      budgetComparison,
       _links: [
         dashboardLinks.summary(),
         dashboardLinks.categoryAnalytics(),
@@ -76,7 +186,7 @@ const getDashboardSummary = async (req, res) => {
       ]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'dashboard-summary' });
+    logger.logError(error, req, { context: 'dashboard-summary' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -148,7 +258,7 @@ const getCategoryAnalytics = async (req, res) => {
       ]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'category-analytics' });
+    logger.logError(error, req, { context: 'category-analytics' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -295,7 +405,7 @@ const getRecentExpenses = async (req, res) => {
       _links: [dashboardLinks.recentExpenses(), dashboardLinks.summary(), dashboardLinks.expenses()]
     });
   } catch (error) {
-    logger.logError(error, null, { context: 'recent-expenses' });
+    logger.logError(error, req, { context: 'recent-expenses' });
     res.status(500).json({ error: 'Internal server error' });
   }
 };

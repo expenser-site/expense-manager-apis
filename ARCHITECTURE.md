@@ -12,8 +12,8 @@ development and your configured domain in production.
 
 - **Production API**: `http://your-server-ip:3000` or `https://your-domain.com`
   (with nginx/reverse proxy)
-- **Development API**: `http://localhost:3000` (local development)
-- **Frontend**: `http://localhost:5173` (local development)
+- **Development API**: `http://localhost:3001` (local development)
+- **Frontend**: `http://localhost:5174` (local development)
 
 ### Components
 
@@ -53,7 +53,7 @@ development and your configured domain in production.
 ### Development
 
 - **Purpose**: Local development with hot reload
-- **Access**: http://localhost:3000
+- **Access**: http://localhost:3001
 - **Features**:
   - Direct API access (no nginx)
   - Hot reload enabled
@@ -99,7 +99,8 @@ If you choose to use nginx as a reverse proxy:
 
 ### Basic Configuration
 
-- Upstream: `localhost:3000` or `api:3000` (if in same Docker network)
+- Upstream: `localhost:3001` (development) or `api:3000` (if in same Docker
+  network)
 - Server name: Your domain or server IP
 - Port: 80 for HTTP, 443 for HTTPS
 - SSL certificates: Use Let's Encrypt or your SSL provider
@@ -132,7 +133,7 @@ This ensures complete isolation between environments.
 
 | Environment | API Port | DB Port | Debug Port |
 | ----------- | -------- | ------- | ---------- |
-| Development | 3000     | 5432    | 9229       |
+| Development | 3001     | 5433    | 9229       |
 | Production  | 3000\*   | 5432\*  | -          |
 
 **Note**: Production ports can be kept internal (not exposed) if using a reverse
@@ -146,7 +147,7 @@ proxy. The `*` indicates optional port exposure.
 make dev
 ```
 
-Access at: http://localhost:3000
+Access at: http://localhost:3001
 
 ### Production
 
