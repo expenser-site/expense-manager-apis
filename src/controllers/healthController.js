@@ -1,4 +1,5 @@
 import prisma from '../config/database.js';
+import logger from '../config/logger.js';
 import { STATIC_LINK_CACHE, createLink } from '../utils/hateoas.js';
 
 export const getHealth = async (req, res) => {
@@ -13,6 +14,7 @@ export const getHealth = async (req, res) => {
 
     res.json(healthCheck);
   } catch (error) {
+    logger.logError(error, req, { context: 'health-check' });
     res.status(503).json({
       status: 'error',
       message: 'Service unavailable',

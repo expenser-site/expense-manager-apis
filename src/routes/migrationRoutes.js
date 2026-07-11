@@ -6,6 +6,7 @@ import {
   fixOrphanExpenses
 } from '../controllers/migrationController.js';
 import authMiddleware from '../middleware/auth.js';
+import adminMiddleware from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
@@ -19,22 +20,22 @@ router.post('/ensure-categories', authMiddleware, ensureUserDefaultCategories);
 /**
  * @route   POST /api/v1/migration/default-categories
  * @desc    Migrate all users to have default categories
- * @access  Private (should be restricted to admin in production)
+ * @access  Admin Only
  */
-router.post('/default-categories', authMiddleware, migrateDefaultCategories);
+router.post('/default-categories', authMiddleware, adminMiddleware, migrateDefaultCategories);
 
 /**
  * @route   GET /api/v1/migration/status
  * @desc    Check migration status
- * @access  Private
+ * @access  Admin Only
  */
-router.get('/status', authMiddleware, checkMigrationStatus);
+router.get('/status', authMiddleware, adminMiddleware, checkMigrationStatus);
 
 /**
  * @route   POST /api/v1/migration/fix-orphan-expenses
  * @desc    Fix expenses without categories
- * @access  Private (should be restricted to admin in production)
+ * @access  Admin Only
  */
-router.post('/fix-orphan-expenses', authMiddleware, fixOrphanExpenses);
+router.post('/fix-orphan-expenses', authMiddleware, adminMiddleware, fixOrphanExpenses);
 
 export default router;

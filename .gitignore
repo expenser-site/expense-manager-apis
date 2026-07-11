@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.development
 .env.production
+.env.production.supabase
 .env.local
 .env.test
 *.local

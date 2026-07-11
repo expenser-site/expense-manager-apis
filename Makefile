@@ -183,8 +183,8 @@ dev: check-prerequisites-dev
 	@echo "$(GREEN)Starting development environment...$(NC)"
 	docker compose -f docker-compose.development.yml up --build -d
 	@echo "$(GREEN)✅ Development environment is running!$(NC)"
-	@echo "$(BLUE)API: http://localhost:3000$(NC)"
-	@echo "$(BLUE)Health: http://localhost:3000/api/v1/health$(NC)"
+	@echo "$(BLUE)API: http://localhost:3001$(NC)"
+	@echo "$(BLUE)Health: http://localhost:3001/api/v1/health$(NC)"
 
 ## dev-build: Build development Docker image
 dev-build:

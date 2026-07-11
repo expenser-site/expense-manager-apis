@@ -171,6 +171,41 @@ const categoryLinks = {
 };
 
 /**
+ * Generate links for budget resources
+ */
+const budgetLinks = {
+  self: budgetId => {
+    if (!budgetId) return null;
+    return createLink('self', `/v1/budgets/${budgetId}`, 'GET', 'Get this budget');
+  },
+
+  update: budgetId => {
+    if (!budgetId) return null;
+    return createLink('update', `/v1/budgets/${budgetId}`, 'PUT', 'Update this budget');
+  },
+
+  delete: budgetId => {
+    if (!budgetId) return null;
+    return createLink('delete', `/v1/budgets/${budgetId}`, 'DELETE', 'Delete this budget');
+  },
+
+  collection: () =>
+    getCachedStaticLink('budget:collection', () =>
+      createLink('collection', '/v1/budgets', 'GET', 'Get all budgets')
+    ),
+
+  create: () =>
+    getCachedStaticLink('budget:create', () =>
+      createLink('create', '/v1/budgets', 'POST', 'Create a new budget')
+    ),
+
+  status: () =>
+    getCachedStaticLink('budget:status', () =>
+      createLink('status', '/v1/budgets/status', 'GET', 'Get budget status and spending comparison')
+    )
+};
+
+/**
  * Generate links for dashboard resources
  */
 const dashboardLinks = {
@@ -296,6 +331,27 @@ const addCategoryLinks = category => {
 };
 
 /**
+ * Add links to a single budget object
+ */
+const addBudgetLinks = budget => {
+  if (!budget || !budget.id) {
+    logger.warn('Cannot add links to invalid budget object');
+    return budget;
+  }
+
+  return {
+    ...budget,
+    _links: [
+      budgetLinks.self(budget.id),
+      budgetLinks.update(budget.id),
+      budgetLinks.delete(budget.id),
+      budgetLinks.collection(),
+      budgetLinks.status()
+    ].filter(Boolean) // Remove null links from invalid IDs
+  };
+};
+
+/**
  * Add links to a collection response
  */
 const addCollectionLinks = (baseUrl, pagination) => {
@@ -358,10 +414,12 @@ export {
   createLink,
   expenseLinks,
   categoryLinks,
+  budgetLinks,
   dashboardLinks,
   userLinks,
   addExpenseLinks,
   addCategoryLinks,
+  addBudgetLinks,
   addCollectionLinks,
   addUserLinks,
   STATIC_LINK_CACHE // For monitoring/health checks

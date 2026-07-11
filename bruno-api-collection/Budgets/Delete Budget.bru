@@ -1,0 +1,31 @@
+meta {
+  name: Delete Budget
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/budgets/97ab15ef-ae1a-4882-8358-a5ae76c2edc6
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function() {
+    expect(res.body.message).to.exist;
+    expect(res.body.message).to.include('deleted');
+  });
+  
+  test("Response has deleted budget info", function() {
+    expect(res.body.budget).to.be.an('object');
+    expect(res.body.budget).to.have.property('id');
+  });
+}

@@ -40,7 +40,7 @@ const emailVerificationTemplate = data => {
     
     ${createWarningBox(`This link expires in <strong>${expiryMinutes} minutes</strong>.`)}
     
-    ${createParagraph("If you didn't create an account, you can safely ignore this email.")}
+    ${createParagraph('If you didn\'t create an account, you can safely ignore this email.')}
     
     ${createParagraph('Best regards,<br>The Expenser Team')}
   `);

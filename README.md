@@ -321,7 +321,7 @@ docker compose -f docker-compose.development.yml up -d
 #### Register User
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/auth/register \
+curl -X POST http://localhost:3001/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -333,7 +333,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 #### Login
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/auth/login \
+curl -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -346,7 +346,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 Redirect users to:
 
 ```
-GET http://localhost:3000/api/v1/auth/google
+GET http://localhost:3001/api/v1/auth/google
 ```
 
 On successful authentication, users will be redirected to:
@@ -361,7 +361,7 @@ detailed configuration instructions.
 #### Update Profile (requires authentication)
 
 ```bash
-curl -X PUT http://localhost:3000/api/v1/auth/profile \
+curl -X PUT http://localhost:3001/api/v1/auth/profile \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -376,7 +376,7 @@ Note: All fields are optional. Only provide fields you want to update.
 ### Create Category (requires authentication)
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/categories \
+curl -X POST http://localhost:3001/api/v1/categories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -389,7 +389,7 @@ curl -X POST http://localhost:3000/api/v1/categories \
 ### Create Expense (requires authentication)
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/expenses \
+curl -X POST http://localhost:3001/api/v1/expenses \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -405,14 +405,14 @@ curl -X POST http://localhost:3000/api/v1/expenses \
 ### Get Expenses (with filters)
 
 ```bash
-curl -X GET "http://localhost:3000/api/v1/expenses?page=1&limit=10&category=Food&startDate=2025-12-01&endDate=2025-12-31" \
+curl -X GET "http://localhost:3001/api/v1/expenses?page=1&limit=10&category=Food&startDate=2025-12-01&endDate=2025-12-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### Get Dashboard Summary
 
 ```bash
-curl -X GET "http://localhost:3000/api/v1/dashboard/summary?startDate=2025-12-01&endDate=2025-12-31" \
+curl -X GET "http://localhost:3001/api/v1/dashboard/summary?startDate=2025-12-01&endDate=2025-12-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
