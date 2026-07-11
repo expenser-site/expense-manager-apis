@@ -1,10 +1,12 @@
 # Bruno API Collection for Expenser
 
-This directory contains the complete Bruno API collection for testing the Expenser APIs.
+This directory contains the complete Bruno API collection for testing the
+Expenser APIs.
 
 ## What is Bruno?
 
-Bruno is a modern, open-source API client that stores collections as plain text files, making them perfect for version control with Git.
+Bruno is a modern, open-source API client that stores collections as plain text
+files, making them perfect for version control with Git.
 
 ## Installation
 
@@ -21,7 +23,7 @@ Download and install Bruno from: <https://www.usebruno.com/>
 
 The collection includes two environments:
 
-- **Local** - For local development (`http://localhost:3000`)
+- **Local** - For local development (`http://localhost:3001`)
 - **Production** - For production API (update the URL as needed)
 
 To switch environments:
@@ -75,11 +77,9 @@ Start by verifying the API is running:
 Run requests in this order:
 
 1. **Register** - Create a new user account
-
    - Automatically saves the token to environment variable
 
 2. **Login** - Login with existing credentials
-
    - Automatically saves the token to environment variable
 
 3. **Get Profile** - Test authentication by getting user profile
@@ -90,7 +90,6 @@ Run requests in this order:
 After authentication, test expense operations:
 
 1. **Create Expense** - Add a new expense
-
    - Automatically saves the expense ID for other requests
 
 2. **Get All Expenses** - List all expenses with pagination
@@ -98,7 +97,6 @@ After authentication, test expense operations:
 3. **Get Expenses with Filter** - Filter by category and date range
 
 4. **Get Expense by ID** - Get a specific expense
-
    - Uses the saved expense ID from Create
 
 5. **Update Expense** - Full update of an expense
@@ -155,15 +153,18 @@ To run all requests in sequence:
 
 ## Tips
 
-1. **Start with Authentication** - Always run Register or Login first to get a valid token
+1. **Start with Authentication** - Always run Register or Login first to get a
+   valid token
 
 2. **Check Environment Variables** - Make sure `token` is set after login
 
 3. **Create Test Data** - Run "Create Expense" a few times to generate test data
 
-4. **Use Variables** - The `{{expenseId}}` variable is automatically set, but you can manually update it in the environment
+4. **Use Variables** - The `{{expenseId}}` variable is automatically set, but
+   you can manually update it in the environment
 
-5. **Modify Request Bodies** - Feel free to modify the JSON bodies to test different scenarios
+5. **Modify Request Bodies** - Feel free to modify the JSON bodies to test
+   different scenarios
 
 6. **Check Tests** - Review the test results to ensure APIs work correctly
 
@@ -171,7 +172,8 @@ To run all requests in sequence:
 
 The collection includes realistic example data:
 
-- **Categories**: Food, Transportation, Shopping, Entertainment, Bills, Healthcare, Other
+- **Categories**: Food, Transportation, Shopping, Entertainment, Bills,
+  Healthcare, Other
 - **Sample Expenses**: Grocery shopping, gas, rent, etc.
 - **Date Ranges**: Current month and year
 
@@ -218,7 +220,8 @@ When adding new endpoints:
 
 ## Version Control
 
-All `.bru` files are plain text and Git-friendly. Commit them like any other code file:
+All `.bru` files are plain text and Git-friendly. Commit them like any other
+code file:
 
 ```bash
 git add bruno-api-collection/
@@ -243,7 +246,8 @@ git push
 
 - `POST /api/v1/expenses` - Create expense (requires auth)
 - `GET /api/v1/expenses` - Get all expenses with pagination (requires auth)
-- `GET /api/v1/expenses?category=Food&startDate=2025-12-01` - Filter expenses (requires auth)
+- `GET /api/v1/expenses?category=Food&startDate=2025-12-01` - Filter expenses
+  (requires auth)
 - `GET /api/v1/expenses/:id` - Get expense by ID (requires auth)
 - `PUT /api/v1/expenses/:id` - Update expense (requires auth)
 - `DELETE /api/v1/expenses/:id` - Delete expense (requires auth)
@@ -251,9 +255,14 @@ git push
 ### Dashboard
 
 - `GET /api/v1/dashboard/summary` - Get summary statistics (requires auth)
-- `GET /api/v1/dashboard/summary?startDate=2025-12-01&endDate=2025-12-31` - Filtered summary (requires auth)
-- `GET /api/v1/dashboard/category-analytics` - Category breakdown (requires auth)
-- `GET /api/v1/dashboard/category-analytics?startDate=2025-12-01` - Filtered analytics (requires auth)
+- `GET /api/v1/dashboard/summary?startDate=2025-12-01&endDate=2025-12-31` -
+  Filtered summary (requires auth)
+- `GET /api/v1/dashboard/category-analytics` - Category breakdown (requires
+  auth)
+- `GET /api/v1/dashboard/category-analytics?startDate=2025-12-01` - Filtered
+  analytics (requires auth)
 - `GET /api/v1/dashboard/monthly-trends` - 12-month trends (requires auth)
-- `GET /api/v1/dashboard/monthly-trends?year=2025` - Year-specific trends (requires auth)
-- `GET /api/v1/dashboard/recent-expenses?limit=5` - Recent expenses (requires auth)
+- `GET /api/v1/dashboard/monthly-trends?year=2025` - Year-specific trends
+  (requires auth)
+- `GET /api/v1/dashboard/recent-expenses?limit=5` - Recent expenses (requires
+  auth)

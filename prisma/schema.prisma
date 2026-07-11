@@ -88,9 +88,12 @@ model Budget {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Alert thresholds (for future use)
+  // Alert thresholds
   alertAt80  Boolean @default(true) // Alert when 80% spent
   alertAt100 Boolean @default(true) // Alert when 100% spent
+
+  // Alert tracking
+  alerts BudgetAlert[]
 
   // Future-proofing fields
   groupId     String? // For future family/group sharing feature
@@ -119,4 +122,19 @@ model BudgetCategory {
   @@index([budgetId])
   @@index([categoryId])
   @@map("budget_categories")
+}
+
+// Budget alert tracking - prevents duplicate alerts
+model BudgetAlert {
+  id           String   @id @default(uuid())
+  budgetId     String
+  budget       Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  threshold    Int // 80 or 100 (percentage)
+  sentAt       DateTime @default(now())
+  spentAmount  Float // Amount spent when alert was triggered
+  spentPercent Float // Percentage spent when alert was triggered
+
+  @@unique([budgetId, threshold]) // Prevent duplicate alerts for same threshold
+  @@index([budgetId])
+  @@map("budget_alerts")
 }

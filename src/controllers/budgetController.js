@@ -1,7 +1,6 @@
 import { validationResult } from 'express-validator';
 import prisma from '../config/database.js';
-import logger from '../config/logger.js';
-import { budgetLinks, addBudgetLinks, addCollectionLinks } from '../utils/hateoas.js';
+import logger from '../config/logger.js'; import budgetAlertService from '../services/budgetAlertService.js'; import { budgetLinks, addBudgetLinks, addCollectionLinks } from '../utils/hateoas.js';
 
 /**
  * Create a new budget
@@ -677,6 +676,23 @@ const getBudgetStatus = async (req, res) => {
       totalSpent: parseFloat(budgetStatusList.reduce((sum, b) => sum + b.spent, 0).toFixed(2)),
       totalRemaining: parseFloat(budgetStatusList.reduce((sum, b) => sum + b.remaining, 0).toFixed(2))
     };
+
+    // FEATURE: Check budgets and send alerts if thresholds are reached
+    // This is done asynchronously to avoid blocking the response
+    budgetStatusList.forEach(status => {
+      if (status.budgetId && status.percentageUsed >= 80) {
+        budgetAlertService.checkAndSendAlerts(
+          status.budgetId,
+          status.spent,
+          status.percentageUsed
+        ).catch(err => {
+          logger.logError(err, req, {
+            context: 'budget-alert-trigger',
+            budgetId: status.budgetId
+          });
+        });
+      }
+    });
 
     res.json({
       year: targetYear,

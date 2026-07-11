@@ -58,7 +58,7 @@ npm run test:budgets
 ### 4. Create Your First Budget
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/budgets \
+curl -X POST http://localhost:3001/api/v1/budgets \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

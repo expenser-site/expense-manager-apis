@@ -13,6 +13,7 @@ import otpVerificationTemplate from './otpVerification.js';
 import otpExpirationTemplate from './otpExpiration.js';
 import accountDeletionTemplate from './accountDeletion.js';
 import dataExportTemplate from './dataExport.js';
+import budgetAlertTemplate from './budgetAlert.js';
 
 export {
   welcomeEmailTemplate,
@@ -24,5 +25,6 @@ export {
   resetPasswordTemplate,
   passwordChangedTemplate,
   accountDeletionTemplate,
-  dataExportTemplate
+  dataExportTemplate,
+  budgetAlertTemplate
 };

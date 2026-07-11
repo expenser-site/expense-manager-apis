@@ -17,7 +17,7 @@ The Budget API allows users to:
 
 Required variables (set in Bruno environments):
 
-- `baseUrl` - API base URL (e.g., `http://localhost:3000`)
+- `baseUrl` - API base URL (e.g., `http://localhost:3001`)
 - `token` - JWT authentication token
 - `categoryId` - Category ID for category-specific budgets (optional)
 - `budgetId` - Budget ID for update/delete/get operations (auto-set after

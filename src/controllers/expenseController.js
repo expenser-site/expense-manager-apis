@@ -1,6 +1,7 @@
 import { validationResult } from 'express-validator';
 import prisma from '../config/database.js';
 import logger from '../config/logger.js';
+import budgetAlertService from '../services/budgetAlertService.js';
 import { getOrCreateNoCategory } from '../utils/defaultCategories.js';
 import { addExpenseLinks, addCollectionLinks, expenseLinks } from '../utils/hateoas.js';
 
@@ -90,6 +91,39 @@ const createExpense = async (req, res) => {
       },
       include: {
         category: true
+      }
+    });
+
+    // FEATURE: Trigger budget alert check asynchronously
+    // This checks if any budgets are affected by this new expense
+    setImmediate(async () => {
+      try {
+        const expenseYear = expenseDate.getFullYear();
+        const expenseMonth = expenseDate.getMonth() + 1;
+
+        // Find budgets that might be affected by this expense
+        const affectedBudgets = await prisma.budget.findMany({
+          where: {
+            userId: req.userId,
+            year: expenseYear,
+            OR: [
+              // Monthly budget for this month
+              { period: 'monthly', month: expenseMonth },
+              // Yearly budget
+              { period: 'yearly' },
+              // Budgets with this category
+              { categories: { some: { categoryId: finalCategoryId } } }
+            ]
+          }
+        });
+
+        // Check each affected budget
+        for (const budget of affectedBudgets) {
+          const { spentAmount, spentPercent } = await budgetAlertService.calculateBudgetSpending(budget);
+          await budgetAlertService.checkAndSendAlerts(budget.id, spentAmount, spentPercent);
+        }
+      } catch (error) {
+        logger.logError(error, req, { context: 'expense-budget-alert-check' });
       }
     });
 
@@ -344,6 +378,35 @@ const updateExpense = async (req, res) => {
       }
     });
 
+    // FEATURE: Trigger budget alert check asynchronously
+    // Check budgets affected by the updated expense
+    setImmediate(async () => {
+      try {
+        const expenseYear = expense.date.getFullYear();
+        const expenseMonth = expense.date.getMonth() + 1;
+
+        // Find budgets that might be affected
+        const affectedBudgets = await prisma.budget.findMany({
+          where: {
+            userId: req.userId,
+            year: expenseYear,
+            OR: [
+              { period: 'monthly', month: expenseMonth },
+              { period: 'yearly' },
+              { categories: { some: { categoryId: expense.categoryId } } }
+            ]
+          }
+        });
+
+        for (const budget of affectedBudgets) {
+          const { spentAmount, spentPercent } = await budgetAlertService.calculateBudgetSpending(budget);
+          await budgetAlertService.checkAndSendAlerts(budget.id, spentAmount, spentPercent);
+        }
+      } catch (error) {
+        logger.logError(error, req, { context: 'expense-update-budget-alert-check' });
+      }
+    });
+
     res.json({
       message: 'Expense updated successfully',
       expense: addExpenseLinks(expense)
@@ -369,8 +432,38 @@ const deleteExpense = async (req, res) => {
       return res.status(404).json({ error: 'Expense not found' });
     }
 
+    // Store expense details before deletion for budget alert check
+    const expenseYear = existingExpense.date.getFullYear();
+    const expenseMonth = existingExpense.date.getMonth() + 1;
+    const categoryId = existingExpense.categoryId;
+
     await prisma.expense.delete({
       where: { id }
+    });
+
+    // FEATURE: Trigger budget alert check asynchronously
+    // Check if deletion brings spending back below thresholds
+    setImmediate(async () => {
+      try {
+        const affectedBudgets = await prisma.budget.findMany({
+          where: {
+            userId: req.userId,
+            year: expenseYear,
+            OR: [
+              { period: 'monthly', month: expenseMonth },
+              { period: 'yearly' },
+              { categories: { some: { categoryId } } }
+            ]
+          }
+        });
+
+        for (const budget of affectedBudgets) {
+          const { spentAmount, spentPercent } = await budgetAlertService.calculateBudgetSpending(budget);
+          await budgetAlertService.checkAndSendAlerts(budget.id, spentAmount, spentPercent);
+        }
+      } catch (error) {
+        logger.logError(error, req, { context: 'expense-delete-budget-alert-check' });
+      }
     });
 
     res.json({
